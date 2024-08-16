@@ -1,5 +1,9 @@
 # Ddait
 
+```bash
+pnpm dev
+```
+
 ## 커밋 컨벤션
 
 | rule         | description                                               |
