@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
       email,
       password,
     })
+
     if (error) {
       return NextResponse.json({ message: error.message }, { status: error.status })
     }
@@ -21,3 +22,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: error })
   }
 }
+
+//sdf
