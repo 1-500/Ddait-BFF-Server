@@ -5,7 +5,7 @@ import { formatBirthdate } from '@/utils/accounts'
 import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 
-export async function POST(req: NextRequest, res: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
@@ -30,6 +30,7 @@ export async function POST(req: NextRequest, res: NextRequest) {
       preferred_sport,
       location,
     })
+
     if (result.error) {
       return NextResponse.json({ message: result.error }, { status: result.status })
     }
