@@ -15,6 +15,11 @@ const MyPositionPageLayout = () => {
   useEffect(() => {
     if (position) {
       setCenter({ lat: position.latitude, lng: position.longitude })
+      if (typeof window === 'undefined' || !!window?.ReactNativeWebView) {
+        return
+      }
+
+      window.ReactNativeWebView?.postMessage(JSON.stringify({ lat: position.latitude, lng: position.longitude }))
     }
   }, [position])
 
@@ -33,7 +38,7 @@ const MyPositionPageLayout = () => {
               height: '100%',
             }}
             level={2}
-            draggable={true} // 지도 드래그 가능
+            draggable={false}
           >
             <MapMarker
               position={center}
