@@ -15,11 +15,10 @@ const MyPositionPageLayout = () => {
   useEffect(() => {
     if (position) {
       setCenter({ lat: position.latitude, lng: position.longitude })
-      if (typeof window === 'undefined' || !!window?.ReactNativeWebView) {
-        return
-      }
 
-      window.ReactNativeWebView?.postMessage(JSON.stringify({ lat: position.latitude, lng: position.longitude }))
+      if (typeof window !== 'undefined' && window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ lat: position.latitude, lng: position.longitude }))
+      }
     }
   }, [position])
 
