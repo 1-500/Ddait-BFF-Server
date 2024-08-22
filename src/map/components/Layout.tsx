@@ -10,7 +10,7 @@ const MyPositionPageLayout = () => {
     appkey: `${process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY}`,
   })
 
-  const [center, setCenter] = useState(null)
+  const [center, setCenter] = useState({ lat: 0, lng: 0 })
 
   useEffect(() => {
     if (position) {
