@@ -10,11 +10,15 @@ const MyPositionPageLayout = () => {
     appkey: `${process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY}`,
   })
 
-  const [center, setCenter] = useState(null)
+  const [center, setCenter] = useState({ lat: 0, lng: 0 })
 
   useEffect(() => {
     if (position) {
       setCenter({ lat: position.latitude, lng: position.longitude })
+
+      if (typeof window !== 'undefined' && window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ lat: position.latitude, lng: position.longitude }))
+      }
     }
   }, [position])
 
@@ -33,7 +37,7 @@ const MyPositionPageLayout = () => {
               height: '100%',
             }}
             level={2}
-            draggable={true} // 지도 드래그 가능
+            draggable={false}
           >
             <MapMarker
               position={center}
