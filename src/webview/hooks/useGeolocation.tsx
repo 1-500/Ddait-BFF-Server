@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getCurrentLocation } from '../utils'
+import { getCurrentLocation } from '../utils/map'
 
 interface Position {
   latitude: number

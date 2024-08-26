@@ -1,12 +1,10 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
-import bcrypt from 'bcrypt'
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@/utils/supabase/client'
 
 export async function POST(req: NextRequest) {
   try {
-    const cookieStore = cookies()
-    const supabase = createClient(cookieStore)
+    const supabase = createClient()
     const { email, password } = await req.json()
 
     const { data, error } = await supabase.auth.signInWithPassword({

@@ -3,12 +3,11 @@ import bcrypt from 'bcrypt'
 import { formatBirthdate } from '@/utils/accounts'
 
 import { cookies } from 'next/headers'
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@/utils/supabase/client'
 
 export async function POST(req: NextRequest) {
   try {
-    const cookieStore = cookies()
-    const supabase = createClient(cookieStore)
+    const supabase = createClient()
 
     const { email, password, nickname, birthdate, gender, location, preferred_sport } = await req.json()
     const hashedPassword = await bcrypt.hash(password, 10)
