@@ -44,7 +44,6 @@ export async function POST(req: NextRequest) {
       {
         member_id: user_id,
         competition_room_id: roomData.id,
-        rank: 1, // 생성하는 사람이므로 1
       },
     ]).select().single()
 
