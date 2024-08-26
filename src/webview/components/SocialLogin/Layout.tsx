@@ -1,42 +1,47 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import Image from 'next/image'
+import { signIn, signOut, useSession } from 'next-auth/react'
+import { useEffect } from 'react'
 
 const SocialLoginPageLayout = () => {
+  const { data: session, status } = useSession()
+  useEffect(() => {
+    const handleMessage = (event) => {
+      const message = JSON.parse(event.data)
+      console.log(message)
+      if (message.type === 'DDait_APP') {
+        if (message.data === 'google') {
+          signIn('google')
+        } else if (message.data === 'kakao') {
+          signIn('kakao')
+        }
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+
+    return () => {
+      window.removeEventListener('message', handleMessage)
+    }
+  }, [])
+  useEffect(() => {
+    const socialLogin = async () => {
+      const { id } = session?.user
+      const response = await fetch(`/api/socialLogin?userId=${id}`) // accessToken을 받아와서 웹뷰로 전달시킴
+      // 첫 로그인 시에만 이렇게 처리하고 그다음부터 세션 유지는 자동으로 토큰 만료 시간되면 API 요청하는식으로 처리하기
+    }
+    socialLogin()
+  }, [session])
+
+  if (status === 'loading') {
+    return <div>로딩중</div>
+  }
+  console.log(session, status, 123)
+
   return (
-    <div className="flex flex-col items-center space-x-4 bg-[#1C1C1C] p-2">
-      <div className="text-md font-semibold text-[#5D5DFC]">SNS 로그인</div>
-      <div className="flex gap-2 mt-1">
-        <Button
-          variant="outline"
-          size="icon"
-          className="rounded-full shadow-md hover:bg-gray-100 border-2 border-[#1C1C1C] transition-opacity duration-100 active:opacity-40"
-        >
-          <Image src="/assets/login/naverIcon.png" alt="Naver Icon" width={40} height={40} />
-        </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          className="rounded-full shadow-md hover:bg-gray-100 border-2 border-[#1C1C1C] transition-opacity duration-100 active:opacity-40"
-        >
-          <Image src="/assets/login/kakaoIcon.png" alt="Kakao Icon" width={40} height={40} />
-        </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          className="rounded-full shadow-md hover:bg-gray-100 border-2 border-[#1C1C1C] transition-opacity duration-100 active:opacity-40"
-        >
-          <Image src="/assets/login/googleIcon.png" alt="Google Icon" width={40} height={40} />
-        </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          className="rounded-full shadow-md hover:bg-gray-100 border-2 border-[#1C1C1C] transition-opacity duration-100 active:opacity-40"
-        >
-          <Image src="/assets/login/appleIcon.png" alt="Apple Icon" width={40} height={40} />
-        </Button>
-      </div>
+    <div>
+      <Button variant="outline" onClick={() => signIn('google')} />
     </div>
   )
 }
