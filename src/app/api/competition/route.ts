@@ -3,7 +3,7 @@ import { createClient } from '@/utils/supabase/client'
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createClient() // supabase 클라이언트 생성
+    const supabase = createClient()
 
     const {
       title,
@@ -14,9 +14,10 @@ export async function POST(req: NextRequest) {
       end_date,
       is_private,
       smartwatch,
+      user_id,
     } = await req.json()
 
-    const { data, error } = await supabase.from('competition_room').insert([
+    const { data: roomData, error: roomError } = await supabase.from('competition_room').insert([
       {
         title,
         max_members,
@@ -27,19 +28,38 @@ export async function POST(req: NextRequest) {
         is_private,
         smartwatch,
       },
-    ]).select() // 데이터 명시적으로 반환
+    ]).select().single()  // 단일 객체로 반환
 
-    if (error) {
-      return NextResponse.json({ message: error.message }, { status: 400 })
+    if (roomError) {
+      return NextResponse.json({ message: `경쟁방 생성 중 오류 발생: ${roomError.message}` }, { status: 400 })
+    }
+    
+    // member_id의 유효성 확인 (로그인 후 유저데이터 저장이 잘못된 경우 대비)
+    const { data: memberData, error: memberError } = await supabase.from('member').select('id').eq('id', user_id).single()
+    if (memberError || !memberData) {
+      return NextResponse.json({ message: '유효하지 않은 사용자 ID입니다.' }, { status: 400 })
     }
 
-    // 데이터가 여전히 null인 경우 확인
-    if (!data || data.length === 0) {
-      return NextResponse.json({ message: 'No data returned after insert' }, { status: 500 })
+    const { data: entryData, error: entryError } = await supabase.from('competition_record').insert([
+      {
+        member_id: user_id,
+        competition_room_id: roomData.id,
+        rank: 1, // 생성하는 사람이므로 1
+      },
+    ]).select().single()
+
+    if (entryError) {
+      return NextResponse.json({ message: `경쟁방에 유저 ${user_id}가 입장하는데 오류가 발생했습니다: ${entryError.message}` }, { status: 400 })
     }
 
-    return NextResponse.json({ message: 'Competition room created successfully', room: data[0] }, { status: 201 })
+    const responseData = {
+      room_id: roomData.id, 
+      title: roomData.title,
+      user: entryData.member_id
+    }
+
+    return NextResponse.json({ message: '경쟁방이 성공적으로 생성되었습니다.', data: responseData }, { status: 201 })
   } catch (error) {
-    return NextResponse.json({ message: error.message || 'An unexpected error occurred' }, { status: 500 })
+    return NextResponse.json({ message: error.message || '예상치 못한 오류가 발생했습니다.' }, { status: 500 })
   }
 }
