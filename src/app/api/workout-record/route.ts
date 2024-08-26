@@ -53,10 +53,12 @@ export async function POST(req: NextRequest) {
         },
       ])
       .select()
-      .single()
+      .maybeSingle()
 
-    if (diaryError) {
-      throw diaryError
+    if (diaryError || !workoutRecord) {
+      console.log('workoutRecord', workoutRecord)
+      console.log('diaryError', diaryError)
+      throw new Error('Failed to create workout record')
     }
 
     const exerciseRecords = []
@@ -67,34 +69,19 @@ export async function POST(req: NextRequest) {
         .from('exercise_name')
         .select('id')
         .eq('name', exercise.exercise_name)
-        .single()
+        .maybeSingle()
 
-      if (exerciseNameError && exerciseNameError.code !== 'PGRST116') {
+      if (exerciseNameError) {
         throw exerciseNameError
       }
 
-      let exercise_name_id
-
       if (!existingExercise) {
-        // exercise_name 테이블에 없으므로 새로 추가
-        const { data: newExercise, error: newExerciseError } = await supabase
-          .from('exercise_name')
-          .insert([{ name: exercise.exercise_name, description: '' }])
-          .select('id')
-          .single()
-
-        if (newExerciseError) {
-          throw newExerciseError
-        }
-
-        exercise_name_id = newExercise.id
-      } else {
-        exercise_name_id = existingExercise.id
+        return NextResponse.json({ error: `Exercise name '${exercise.exercise_name}' does not exist` }, { status: 400 })
       }
 
       exerciseRecords.push({
         workout_diary_id: workoutRecord.id,
-        exercise_name_id: exercise_name_id,
+        exercise_name_id: existingExercise.id,
         set: exercise.set,
         reps: exercise.reps,
         weight: exercise.weight,
