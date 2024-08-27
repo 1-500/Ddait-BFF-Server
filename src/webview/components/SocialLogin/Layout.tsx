@@ -2,29 +2,11 @@
 
 import { Button } from '@/components/ui/button'
 import { signIn, signOut, useSession } from 'next-auth/react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 const SocialLoginPageLayout = () => {
   const { data: session, status } = useSession()
-  useEffect(() => {
-    const handleMessage = (event) => {
-      const message = JSON.parse(event.data)
-      console.log(message)
-      if (message.type === 'DDait_APP') {
-        if (message.data === 'google') {
-          signIn('google')
-        } else if (message.data === 'kakao') {
-          signIn('kakao')
-        }
-      }
-    }
 
-    window.addEventListener('message', handleMessage)
-
-    return () => {
-      window.removeEventListener('message', handleMessage)
-    }
-  }, [])
   useEffect(() => {
     if (session && session.user) {
       const socialLogin = async () => {
@@ -43,6 +25,7 @@ const SocialLoginPageLayout = () => {
               const data = await response.json()
               if (typeof window !== 'undefined' && window.ReactNativeWebView) {
                 window.ReactNativeWebView.postMessage(JSON.stringify({ token: data, user_level, socialEmail: email }))
+                await signOut()
               }
             } else {
               throw new Error('Network error!')
@@ -55,11 +38,9 @@ const SocialLoginPageLayout = () => {
       socialLogin()
     }
   }, [session])
-
-  console.log(session, session?.user)
   return (
     <div>
-      <div>로딩중</div>
+      <Button onClick={() => signIn('google')}>구글로그인</Button>
     </div>
   )
 }
