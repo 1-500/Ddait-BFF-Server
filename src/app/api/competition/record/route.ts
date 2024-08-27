@@ -53,7 +53,8 @@ export async function POST(req: NextRequest) {
         },
       ])
       .select('id')
-    const competitionRecordId = insertResult.data ? insertResult.data[0].id : null
+      .single()
+    const competitionRecordId = insertResult.data?.id
 
     if (!competitionRecordId) {
       console.error('No competition record ID found')
@@ -118,6 +119,19 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  function getExerciseIdByName(name: string): number {
+    switch (name) {
+      case '데드리프트':
+        return 1
+      case '벤치프레스':
+        return 2
+      case '스쿼트':
+        return 3
+      default:
+        throw new Error(`Unknown exercise name: ${name}`)
+    }
+  }
+
   try {
     const body = await req.json()
     const { member_id, competition_room_id } = body
@@ -129,11 +143,17 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ message: 'Invalid JSON body' }, { status: 400 })
     }
 
-    // TODO: 운동 데이터 일지에서 가져오기
+    // 운동 데이터 일지에서 가져오기
     const results: any = {}
     const scores: any = {}
 
     const competitionRoom = await supabase.from('competition_room').select('*').eq('id', competition_room_id).single()
+    const competitionRecord = await supabase
+      .from('competition_record')
+      .select('*')
+      .eq('member_id', member_id)
+      .eq('competition_room_id', competition_room_id)
+      .single()
     const member = await supabase.from('member').select('weight').eq('id', member_id).single()
     const weight = member.data?.weight
 
@@ -154,28 +174,34 @@ export async function PATCH(req: NextRequest) {
               const workoutDiary = await supabase.from('workout_diary').select('*').eq('member_id', member_id)
 
               for (const diaryElement of workoutDiary.data || []) {
-                // TODO: 날짜 체크하기
-                const exerciseInfo = await supabase
-                  .from('exercise_info')
-                  .select('*')
-                  .eq('workout_diary_id', diaryElement.id)
+                // 날짜 체크하기
+                const diaryCreatedAt = new Date(diaryElement.created_at)
+                const startDate = new Date(start_date)
+                const endDate = new Date(end_date)
 
-                for (const exerciseElement of exerciseInfo.data || []) {
-                  const exerciseName = await supabase
-                    .from('exercise_name')
+                if (diaryCreatedAt >= startDate && diaryCreatedAt <= endDate) {
+                  const exerciseInfo = await supabase
+                    .from('exercise_info')
                     .select('*')
-                    .eq('id', exerciseElement.exercise_name_id)
-                    .single()
+                    .eq('workout_diary_id', diaryElement.id)
 
-                  if (exerciseName.data) {
-                    switch (exerciseName.data.name) {
-                      case '데드리프트':
-                      case '스쿼트':
-                      case '벤치프레스':
-                        results[exerciseName.data.name].push(exerciseElement)
-                        break
-                      default:
-                        break
+                  for (const exerciseElement of exerciseInfo.data || []) {
+                    const exerciseName = await supabase
+                      .from('exercise_name')
+                      .select('*')
+                      .eq('id', exerciseElement.exercise_name_id)
+                      .single()
+
+                    if (exerciseName.data) {
+                      switch (exerciseName.data.name) {
+                        case '데드리프트':
+                        case '스쿼트':
+                        case '벤치프레스':
+                          results[exerciseName.data.name].push(exerciseElement)
+                          break
+                        default:
+                          break
+                      }
                     }
                   }
                 }
@@ -191,12 +217,23 @@ export async function PATCH(req: NextRequest) {
           break
       }
     }
-    // TODO: 점수 계산 후 저장
 
+    // 점수 계산 후 저장
     for (let key in results) {
       const value = results[key as keyof typeof results]
       if (value.length === 0) {
-        // TODO: competition_score 테이블에서 key 값에 해당하는 점수 0으로 설정
+        // competition_score 테이블에서 key 값에 해당하는 점수 0으로 설정
+        const updateZeroResult = await supabase
+          .from('competition_score')
+          .update({ score: 0 })
+          .eq('exercise_name_id', getExerciseIdByName(key))
+          .eq('competition_record_id', competitionRecord.data?.id)
+
+        if (updateZeroResult.error) {
+          console.error('Error updating competition_score with zero:', updateZeroResult.error)
+          return NextResponse.json({ message: updateZeroResult.error.message }, { status: 400 })
+        }
+
         continue
       }
 
@@ -215,15 +252,32 @@ export async function PATCH(req: NextRequest) {
       } else if (key === '벤치프레스') {
         score *= 1.4
       }
-      scores[key] = score
-      // TODO: competition_score 테이블에서 key 값에 해당하는 점수 score으로 설정
+      scores[key] = Math.round(score * 100) / 100
+      // competition_score 테이블에서 key 값에 해당하는 점수 score으로 설정
+      const updateScoreResult = await supabase
+        .from('competition_score')
+        .update({ score: scores[key] })
+        .eq('exercise_name_id', getExerciseIdByName(key))
+        .eq('competition_record_id', competitionRecord.data?.id)
+
+      if (updateScoreResult.error) {
+        console.error('Error updating competition_score:', updateScoreResult.error)
+        return NextResponse.json({ message: updateScoreResult.error.message }, { status: 400 })
+      }
     }
-    console.log(scores)
+
+    // competition_record 테이블에서 score 값 totalScore으로 설정
     const totalScore = Object.values(scores as number[]).reduce((acc: number, cur: number) => acc + cur, 0)
+    const updateTotalScoreResult = await supabase
+      .from('competition_record')
+      .update({ score: totalScore })
+      .eq('id', competitionRecord.data?.id)
+    if (updateTotalScoreResult.error) {
+      console.error('Error updating competition_record:', updateTotalScoreResult.error)
+      return NextResponse.json({ message: updateTotalScoreResult.error.message }, { status: 400 })
+    }
 
-    // TODO: competition_record 테이블에서 score 값 totalScore으로 설정
-
-    return NextResponse.json({ status: 201 }) // 201: Created
+    return NextResponse.json({ data: { total_score: totalScore, ...scores }, status: 201 }) // 201: Created
   } catch (error) {
     console.error('Error in POST request:', error)
     return NextResponse.json({ message: error || 'Unknown error occurred' }, { status: 400 })
