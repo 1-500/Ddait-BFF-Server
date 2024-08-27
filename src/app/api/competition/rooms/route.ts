@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
     const supabase = createClient()
     const { data: allRooms, error } = await supabase
       .from('competition_room')
-      .select('*')
+      .select('*, current_members:competition_record(count)')
       .order('start_date', { ascending: false })
 
     if (error) {
@@ -16,10 +16,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: '경쟁방 목록 조회 중 오류 발생' }, { status: 400 })
     }
 
+    const allRoomsData = allRooms.map((room) => ({
+      ...room,
+      current_members: parseInt(room.current_members[0].count, 10),
+    }))
+
     return NextResponse.json(
       {
         message: '전체 경쟁방 목록 조회 성공',
-        data: allRooms,
+        data: allRoomsData,
       },
       { status: 200 },
     )
