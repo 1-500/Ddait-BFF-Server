@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/client'
 
+// 전체 경쟁방 목록 조회
 export async function GET(req: NextRequest) {
   try {
     const supabase = createClient()
