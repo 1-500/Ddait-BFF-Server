@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       user_id,
     } = await req.json()
 
-    const { data: roomData, error: roomError } = await supabase.from('competition_room').insert([
+    const { data: roomData} = await supabase.from('competition_room').insert([
       {
         title,
         max_members,
@@ -30,9 +30,6 @@ export async function POST(req: NextRequest) {
       },
     ]).select().single()  // 단일 객체로 반환
 
-    if (roomError) {
-      return NextResponse.json({ message: `경쟁방 생성 중 오류 발생: ${roomError.message}` }, { status: 400 })
-    }
     const responseData = {
       room_id: roomData.id, 
       title: roomData.title,
