@@ -1,4 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server'
+import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 
 export async function GET(req: NextRequest) {
@@ -6,7 +7,9 @@ export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams
     const roomId = searchParams.get('roomId')
     const memberId = searchParams.get('memberId')
-    const supabase = createClient()
+
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
 
     let result
     if (roomId) {
@@ -36,7 +39,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { member_id, competition_room_id } = body
 
-    const supabase = createClient()
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
 
     if (!body) {
       // 요청 본문이 없거나 잘못된 경우 처리
@@ -136,7 +140,8 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json()
     const { member_id, competition_room_id } = body
 
-    const supabase = createClient()
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
 
     if (!body) {
       // 요청 본문이 없거나 잘못된 경우 처리
