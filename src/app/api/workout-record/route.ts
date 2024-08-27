@@ -1,6 +1,6 @@
 // src/app/api/workout-record/route.ts
+import { createClient } from '@/utils/supabase/client'
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '../../../utils/supabase/server'
 
 export async function GET(req: NextRequest) {
   try {
