@@ -26,22 +26,40 @@ const SocialLoginPageLayout = () => {
     }
   }, [])
   useEffect(() => {
-    const socialLogin = async () => {
-      const { id } = session?.user
-      const response = await fetch(`/api/socialLogin?userId=${id}`) // accessToken을 받아와서 웹뷰로 전달시킴
-      // 첫 로그인 시에만 이렇게 처리하고 그다음부터 세션 유지는 자동으로 토큰 만료 시간되면 API 요청하는식으로 처리하기
+    if (session && session.user) {
+      const socialLogin = async () => {
+        try {
+          const { email, user_level } = session.user
+
+          if (user_level === 0) {
+            // 온보딩 시키도록 RN에서 처리
+            if (typeof window !== 'undefined' && window.ReactNativeWebView) {
+              // 소셜로그인한 기록 테이블에 추가
+              window.ReactNativeWebView.postMessage(JSON.stringify({ socialEmail: email, user_level }))
+            }
+          } else if (user_level >= 1) {
+            let response = await fetch(`/api/social/login/?email=${email}`)
+            if (response.ok) {
+              const data = await response.json()
+              if (typeof window !== 'undefined' && window.ReactNativeWebView) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ token: data, user_level, socialEmail: email }))
+              }
+            } else {
+              throw new Error('Network error!')
+            }
+          }
+        } catch (error) {
+          console.log(error)
+        }
+      }
+      socialLogin()
     }
-    socialLogin()
   }, [session])
 
-  // if (status === 'loading') {
-  //   return <div>로딩중</div>
-  // }
-  console.log(session, status, 123)
-
+  console.log(session, session?.user)
   return (
     <div>
-      <Button variant="outline" onClick={() => signIn('google')} />
+      <div>로딩중</div>
     </div>
   )
 }

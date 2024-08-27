@@ -2,7 +2,6 @@ import { NextResponse, NextRequest } from 'next/server'
 import bcrypt from 'bcrypt'
 import { formatBirthdate } from '@/utils/accounts'
 
-import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/client'
 
 export async function POST(req: NextRequest) {
