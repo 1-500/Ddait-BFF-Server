@@ -1,6 +1,6 @@
 'use client'
 
-import useGeolocation from '../hooks/useGeolocation'
+import useGeolocation from '../../hooks/useGeolocation'
 import { Map, MapMarker, useKakaoLoader } from 'react-kakao-maps-sdk'
 import { useEffect, useState } from 'react'
 
@@ -37,7 +37,7 @@ const MyPositionPageLayout = () => {
               height: '100%',
             }}
             level={2}
-            draggable={false}
+            draggable={true}
           >
             <MapMarker
               position={center}
