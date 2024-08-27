@@ -31,7 +31,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     // 참여자 id 조회
     const { data: members, error: membersError } = await supabase
       .from('competition_record')
-      .select('member_id')
+      .select('member_id', { count: 'exact' })
       .eq('competition_room_id', id)
 
     if (membersError) {
