@@ -11,26 +11,73 @@ export async function GET(req: NextRequest) {
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
 
-    let result
+    const responseData: any = []
+
+    let competitionRecord
     if (roomId) {
       if (memberId) {
-        result = await supabase
+        competitionRecord = await supabase
           .from('competition_record')
           .select('*')
           .eq('competition_room_id', roomId)
           .eq('member_id', memberId)
       } else {
-        result = await supabase.from('competition_record').select('*').eq('competition_room_id', roomId)
+        competitionRecord = await supabase.from('competition_record').select('*').eq('competition_room_id', roomId)
       }
     } else {
-      result = await supabase.from('competition_record').select('*')
+      competitionRecord = await supabase.from('competition_record').select('*')
     }
 
-    if (result.error) {
-      return NextResponse.json({ message: result.error.message }, { status: result.status })
+    if (competitionRecord.error) {
+      return NextResponse.json({ message: competitionRecord.error.message }, { status: competitionRecord.status })
     }
 
-    return NextResponse.json({ data: result.data, status: result.status })
+    for (const recordElement of (competitionRecord.data || []).sort((a, b) => {
+      if (roomId) {
+        return a.total_score - b.total_score
+      } else {
+        if (a.competition_room_id === b.competition_room_id) {
+          return b.total_score - a.total_score
+        } else {
+          return a.competition_room_id - b.competition_room_id
+        }
+      }
+    })) {
+      const scoreDetailData = []
+
+      const competitionScore = await supabase
+        .from('competition_score')
+        .select('*')
+        .eq('competition_record_id', recordElement.id)
+      if (competitionScore.error) {
+        return NextResponse.json({ message: competitionScore.error.message }, { status: competitionScore.status })
+      }
+
+      for (const scoreElement of (competitionScore.data || []).sort(
+        (a, b) => a.exercise_name_id - b.exercise_name_id,
+      )) {
+        const exerciseName = await supabase
+          .from('exercise_name')
+          .select('name')
+          .eq('id', scoreElement.exercise_name_id)
+          .single()
+        if (exerciseName.error) {
+          return NextResponse.json({ message: exerciseName.error.message }, { status: exerciseName.status })
+        }
+
+        scoreDetailData.push({
+          name: exerciseName.data.name,
+          score: scoreElement.score,
+        })
+      }
+
+      responseData.push({
+        ...recordElement,
+        score_detail: scoreDetailData,
+      })
+    }
+
+    return NextResponse.json({ data: responseData, status: 200 })
   } catch (error) {
     console.log(error)
     return NextResponse.json({ message: error }, { status: 400 })
