@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     switch (competitionRoom?.data.competition_type) {
       case '웨이트트레이닝':
         switch (competitionRoom.data.competition_theme) {
-          case '3대측정':
+          case '3대측정내기':
             const deadliftInsertResult = await supabase.from('competition_score').insert([
               {
                 competition_record_id: competitionRecordId,
@@ -168,7 +168,7 @@ export async function PATCH(req: NextRequest) {
       switch (competition_type) {
         case '웨이트트레이닝':
           switch (competition_theme) {
-            case '3대측정':
+            case '3대측정내기':
               results['데드리프트'] = []
               results['스쿼트'] = []
               results['벤치프레스'] = []
