@@ -21,7 +21,6 @@ export async function GET(req: NextRequest) {
     } else {
       result = await supabase.from('competition_record').select('*')
     }
-    console.log(result)
 
     if (result.error) {
       return NextResponse.json({ message: result.error.message }, { status: result.status })
@@ -47,6 +46,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Invalid JSON body' }, { status: 400 })
     }
     const competitionRoom = await supabase.from('competition_room').select('*').eq('id', competition_room_id).single()
+    if (competitionRoom.error) {
+      return NextResponse.json({ message: competitionRoom.error.message }, { status: competitionRoom.status })
+    }
 
     const insertResult = await supabase
       .from('competition_record')
@@ -58,19 +60,18 @@ export async function POST(req: NextRequest) {
       ])
       .select('id')
       .single()
-    const competitionRecordId = insertResult.data?.id
+    if (insertResult.error) {
+      console.error('Supabase Insert into competition_record Error:', insertResult.error)
+      return NextResponse.json({ message: insertResult.error.message }, { status: insertResult.status })
+    }
 
+    const competitionRecordId = insertResult.data.id
     if (!competitionRecordId) {
       console.error('No competition record ID found')
       return NextResponse.json({ message: 'Failed to create competition record', status: 400 })
     }
 
-    if (insertResult.error) {
-      console.error('Supabase Insert into competition_record Error:', insertResult.error)
-      return NextResponse.json({ message: insertResult.error.message }, { status: 400 })
-    }
-
-    switch (competitionRoom?.data.competition_type) {
+    switch (competitionRoom.data.competition_type) {
       case '웨이트트레이닝':
         switch (competitionRoom.data.competition_theme) {
           case '3대측정내기':
@@ -82,7 +83,10 @@ export async function POST(req: NextRequest) {
             ])
             if (deadliftInsertResult.error) {
               console.error('Supabase Insert into competition_score Error:', deadliftInsertResult.error)
-              return NextResponse.json({ message: deadliftInsertResult.error.message }, { status: 400 })
+              return NextResponse.json(
+                { message: deadliftInsertResult.error.message },
+                { status: deadliftInsertResult.status },
+              )
             }
 
             const squatInsertResult = await supabase.from('competition_score').insert([
@@ -93,7 +97,10 @@ export async function POST(req: NextRequest) {
             ])
             if (squatInsertResult.error) {
               console.error('Supabase Insert into competition_score Error:', squatInsertResult.error)
-              return NextResponse.json({ message: squatInsertResult.error.message }, { status: 400 })
+              return NextResponse.json(
+                { message: squatInsertResult.error.message },
+                { status: squatInsertResult.status },
+              )
             }
 
             const benchpressInsertResult = await supabase.from('competition_score').insert([
@@ -104,7 +111,10 @@ export async function POST(req: NextRequest) {
             ])
             if (benchpressInsertResult.error) {
               console.error('Supabase Insert into competition_score Error:', benchpressInsertResult.error)
-              return NextResponse.json({ message: benchpressInsertResult.error.message }, { status: 400 })
+              return NextResponse.json(
+                { message: benchpressInsertResult.error.message },
+                { status: benchpressInsertResult.status },
+              )
             }
 
             break
@@ -115,7 +125,7 @@ export async function POST(req: NextRequest) {
       default:
     }
 
-    return NextResponse.json({ data: insertResult, status: 201 }) // 201:
+    return NextResponse.json({ data: insertResult, status: 201 })
   } catch (error) {
     console.error('Error in POST request:', error)
     return NextResponse.json({ message: error || 'Unknown error occurred' }, { status: 400 })
@@ -153,14 +163,26 @@ export async function PATCH(req: NextRequest) {
     const scores: any = {}
 
     const competitionRoom = await supabase.from('competition_room').select('*').eq('id', competition_room_id).single()
+    if (competitionRoom.error) {
+      return NextResponse.json({ message: competitionRoom.error.message }, { status: competitionRoom.status })
+    }
+
     const competitionRecord = await supabase
       .from('competition_record')
       .select('*')
       .eq('member_id', member_id)
       .eq('competition_room_id', competition_room_id)
       .single()
+    if (competitionRecord.error) {
+      return NextResponse.json({ message: competitionRecord.error.message }, { status: competitionRecord.status })
+    }
+
     const member = await supabase.from('member').select('weight').eq('id', member_id).single()
-    const weight = member.data?.weight
+    if (member.error) {
+      return NextResponse.json({ message: member.error.message }, { status: member.status })
+    }
+
+    const weight = member.data.weight
 
     if (competitionRoom.data) {
       const { competition_type, competition_theme, start_date, end_date } = competitionRoom.data
@@ -177,6 +199,9 @@ export async function PATCH(req: NextRequest) {
               scores['벤치프레스'] = 0
 
               const workoutDiary = await supabase.from('workout_diary').select('*').eq('member_id', member_id)
+              if (workoutDiary.error) {
+                return NextResponse.json({ message: workoutDiary.error.message }, { status: workoutDiary.status })
+              }
 
               for (const diaryElement of workoutDiary.data || []) {
                 // 날짜 체크하기
@@ -189,6 +214,9 @@ export async function PATCH(req: NextRequest) {
                     .from('exercise_info')
                     .select('*')
                     .eq('workout_diary_id', diaryElement.id)
+                  if (exerciseInfo.error) {
+                    return NextResponse.json({ message: exerciseInfo.error.message }, { status: exerciseInfo.status })
+                  }
 
                   for (const exerciseElement of exerciseInfo.data || []) {
                     const exerciseName = await supabase
@@ -196,6 +224,9 @@ export async function PATCH(req: NextRequest) {
                       .select('*')
                       .eq('id', exerciseElement.exercise_name_id)
                       .single()
+                    if (exerciseName.error) {
+                      return NextResponse.json({ message: exerciseName.error.message }, { status: exerciseName.status })
+                    }
 
                     if (exerciseName.data) {
                       switch (exerciseName.data.name) {
@@ -232,11 +263,10 @@ export async function PATCH(req: NextRequest) {
           .from('competition_score')
           .update({ score: 0 })
           .eq('exercise_name_id', getExerciseIdByName(key))
-          .eq('competition_record_id', competitionRecord.data?.id)
-
+          .eq('competition_record_id', competitionRecord.data.id)
         if (updateZeroResult.error) {
           console.error('Error updating competition_score with zero:', updateZeroResult.error)
-          return NextResponse.json({ message: updateZeroResult.error.message }, { status: 400 })
+          return NextResponse.json({ message: updateZeroResult.error.message }, { status: updateZeroResult.status })
         }
 
         continue
@@ -263,11 +293,10 @@ export async function PATCH(req: NextRequest) {
         .from('competition_score')
         .update({ score: scores[key] })
         .eq('exercise_name_id', getExerciseIdByName(key))
-        .eq('competition_record_id', competitionRecord.data?.id)
-
+        .eq('competition_record_id', competitionRecord.data.id)
       if (updateScoreResult.error) {
         console.error('Error updating competition_score:', updateScoreResult.error)
-        return NextResponse.json({ message: updateScoreResult.error.message }, { status: 400 })
+        return NextResponse.json({ message: updateScoreResult.error.message }, { status: updateScoreResult.status })
       }
     }
 
@@ -276,13 +305,16 @@ export async function PATCH(req: NextRequest) {
     const updateTotalScoreResult = await supabase
       .from('competition_record')
       .update({ score: totalScore })
-      .eq('id', competitionRecord.data?.id)
+      .eq('id', competitionRecord.data.id)
     if (updateTotalScoreResult.error) {
       console.error('Error updating competition_record:', updateTotalScoreResult.error)
-      return NextResponse.json({ message: updateTotalScoreResult.error.message }, { status: 400 })
+      return NextResponse.json(
+        { message: updateTotalScoreResult.error.message },
+        { status: updateTotalScoreResult.status },
+      )
     }
 
-    return NextResponse.json({ data: { total_score: totalScore, ...scores }, status: 201 }) // 201: Created
+    return NextResponse.json({ data: { total_score: totalScore, ...scores }, status: 200 })
   } catch (error) {
     console.error('Error in POST request:', error)
     return NextResponse.json({ message: error || 'Unknown error occurred' }, { status: 400 })
