@@ -162,6 +162,11 @@ export async function PATCH(req: NextRequest) {
     const results: any = {}
     const scores: any = {}
 
+    const member = await supabase.from('member').select('weight').eq('id', member_id).single()
+    if (member.error) {
+      return NextResponse.json({ message: member.error.message }, { status: member.status })
+    }
+
     const competitionRoom = await supabase.from('competition_room').select('*').eq('id', competition_room_id).single()
     if (competitionRoom.error) {
       return NextResponse.json({ message: competitionRoom.error.message }, { status: competitionRoom.status })
@@ -177,85 +182,94 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ message: competitionRecord.error.message }, { status: competitionRecord.status })
     }
 
-    const member = await supabase.from('member').select('weight').eq('id', member_id).single()
-    if (member.error) {
-      return NextResponse.json({ message: member.error.message }, { status: member.status })
-    }
-
     const weight = member.data.weight
+    const { competition_type, competition_theme, start_date, end_date } = competitionRoom.data
 
-    if (competitionRoom.data) {
-      const { competition_type, competition_theme, start_date, end_date } = competitionRoom.data
+    switch (competition_type) {
+      case '웨이트트레이닝':
+        switch (competition_theme) {
+          case '3대측정내기':
+            results['데드리프트'] = []
+            results['스쿼트'] = []
+            results['벤치프레스'] = []
+            scores['데드리프트'] = 0
+            scores['스쿼트'] = 0
+            scores['벤치프레스'] = 0
 
-      switch (competition_type) {
-        case '웨이트트레이닝':
-          switch (competition_theme) {
-            case '3대측정내기':
-              results['데드리프트'] = []
-              results['스쿼트'] = []
-              results['벤치프레스'] = []
-              scores['데드리프트'] = 0
-              scores['스쿼트'] = 0
-              scores['벤치프레스'] = 0
+            const workoutDiary = await supabase.from('workout_diary').select('*').eq('member_id', member_id)
+            if (workoutDiary.error) {
+              return NextResponse.json({ message: workoutDiary.error.message }, { status: workoutDiary.status })
+            }
 
-              const workoutDiary = await supabase.from('workout_diary').select('*').eq('member_id', member_id)
-              if (workoutDiary.error) {
-                return NextResponse.json({ message: workoutDiary.error.message }, { status: workoutDiary.status })
-              }
+            for (const diaryElement of workoutDiary.data || []) {
+              // 날짜 체크하기
+              const diaryCreatedAt = new Date(diaryElement.created_at)
+              const startDate = new Date(start_date)
+              const endDate = new Date(end_date)
 
-              for (const diaryElement of workoutDiary.data || []) {
-                // 날짜 체크하기
-                const diaryCreatedAt = new Date(diaryElement.created_at)
-                const startDate = new Date(start_date)
-                const endDate = new Date(end_date)
+              if (diaryCreatedAt >= startDate && diaryCreatedAt <= endDate) {
+                const resultData: any = {
+                  created_at: diaryCreatedAt,
+                  exercise_info: {
+                    데드리프트: [],
+                    스쿼트: [],
+                    벤치프레스: [],
+                  },
+                }
 
-                if (diaryCreatedAt >= startDate && diaryCreatedAt <= endDate) {
-                  const exerciseInfo = await supabase
-                    .from('exercise_info')
+                const exerciseInfo = await supabase
+                  .from('exercise_info')
+                  .select('*')
+                  .eq('workout_diary_id', diaryElement.id)
+                if (exerciseInfo.error) {
+                  return NextResponse.json({ message: exerciseInfo.error.message }, { status: exerciseInfo.status })
+                }
+
+                for (const exerciseElement of exerciseInfo.data || []) {
+                  const exerciseName = await supabase
+                    .from('exercise_name')
                     .select('*')
-                    .eq('workout_diary_id', diaryElement.id)
-                  if (exerciseInfo.error) {
-                    return NextResponse.json({ message: exerciseInfo.error.message }, { status: exerciseInfo.status })
+                    .eq('id', exerciseElement.exercise_name_id)
+                    .single()
+                  if (exerciseName.error) {
+                    return NextResponse.json({ message: exerciseName.error.message }, { status: exerciseName.status })
                   }
 
-                  for (const exerciseElement of exerciseInfo.data || []) {
-                    const exerciseName = await supabase
-                      .from('exercise_name')
-                      .select('*')
-                      .eq('id', exerciseElement.exercise_name_id)
-                      .single()
-                    if (exerciseName.error) {
-                      return NextResponse.json({ message: exerciseName.error.message }, { status: exerciseName.status })
-                    }
-
-                    if (exerciseName.data) {
-                      switch (exerciseName.data.name) {
-                        case '데드리프트':
-                        case '스쿼트':
-                        case '벤치프레스':
-                          results[exerciseName.data.name].push(exerciseElement)
-                          break
-                        default:
-                          break
-                      }
+                  if (exerciseName.data) {
+                    switch (exerciseName.data.name) {
+                      case '데드리프트':
+                      case '스쿼트':
+                      case '벤치프레스':
+                        resultData.exercise_info[exerciseName.data.name].push(exerciseElement)
+                        break
+                      default:
+                        break
                     }
                   }
                 }
+                for (const key in results) {
+                  if (resultData.exercise_info[key].length > 0) {
+                    results[key].push({
+                      created_at: resultData.created_at,
+                      exercise_info: resultData.exercise_info[key],
+                    })
+                  }
+                }
               }
-              break
-            default:
-              break
-          }
-          break
-        case '러닝':
-        case '다이어트':
-        default:
-          break
-      }
+            }
+            break
+          default:
+            break
+        }
+        break
+      case '러닝':
+      case '다이어트':
+      default:
+        break
     }
 
     // 점수 계산 후 저장
-    for (let key in results) {
+    for (const key in results) {
       const value = results[key as keyof typeof results]
       if (value.length === 0) {
         // competition_score 테이블에서 key 값에 해당하는 점수 0으로 설정
@@ -272,22 +286,30 @@ export async function PATCH(req: NextRequest) {
         continue
       }
 
-      let totalWeight = 0
-      let totalReps = 0
+      // 날짜별 점수 계산 후 합
+      let score = 0
+      for (const diaryElement of value) {
+        let totalWeight = 0
+        let totalReps = 0
 
-      for (const element of value) {
-        totalWeight += element.weight * element.reps
-        totalReps += element.reps
+        for (const element of diaryElement.exercise_info) {
+          totalWeight += element.weight * element.reps
+          totalReps += element.reps
+        }
+
+        let scoreByDate = ((totalWeight / totalReps) * Math.log(totalReps + 1)) / weight
+
+        if (key === '스쿼트') {
+          scoreByDate *= 1.2
+        } else if (key === '벤치프레스') {
+          scoreByDate *= 1.4
+        }
+
+        score += Math.round(scoreByDate * 100) / 100
       }
 
-      let score = ((totalWeight / totalReps) * Math.log(totalReps + 1)) / weight
+      scores[key] = score
 
-      if (key === '스쿼트') {
-        score *= 1.2
-      } else if (key === '벤치프레스') {
-        score *= 1.4
-      }
-      scores[key] = Math.round(score * 100) / 100
       // competition_score 테이블에서 key 값에 해당하는 점수 score으로 설정
       const updateScoreResult = await supabase
         .from('competition_score')
