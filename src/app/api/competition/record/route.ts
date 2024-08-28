@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 
     for (const recordElement of (competitionRecord.data || []).sort((a, b) => {
       if (roomId) {
-        return a.total_score - b.total_score
+        return b.total_score - a.total_score
       } else {
         if (a.competition_room_id === b.competition_room_id) {
           return b.total_score - a.total_score
