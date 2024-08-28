@@ -13,8 +13,9 @@ export async function GET(req: NextRequest) {
 
     const responseData: any = {
       weight: null,
+      rank: null,
       total_score: null,
-      scores: [],
+      score_detail: [],
     }
 
     const competitionRoom = await supabase.from('competition_room').select('*').eq('id', roomId).single()
@@ -41,9 +42,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: competitionRecord.error.message }, { status: competitionRecord.status })
     }
 
-    responseData.total_score = competitionRecord.data.score
+    responseData.rank = competitionRecord.data.rank
+    responseData.total_score = competitionRecord.data.total_score
 
-    // scores
+    // score_detail
     const competitionScore = await supabase
       .from('competition_score')
       .select('*')
@@ -59,7 +61,7 @@ export async function GET(req: NextRequest) {
         diary: [],
       }
 
-      // scores[i].name
+      // score_detail[i].name
       const exerciseName = await supabase
         .from('exercise_name')
         .select('*')
@@ -71,7 +73,7 @@ export async function GET(req: NextRequest) {
 
       scoreData.name = exerciseName.data.name
 
-      // scores[i].diary
+      // score_detail[i].diary
       const workoutDiary = await supabase.from('workout_diary').select('*').eq('member_id', memberId)
       if (workoutDiary.error) {
         return NextResponse.json({ message: workoutDiary.error.message }, { status: workoutDiary.status })
@@ -103,7 +105,7 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      responseData.scores.push(scoreData)
+      responseData.score_detail.push(scoreData)
     }
 
     return NextResponse.json({ data: responseData, status: 200 })
