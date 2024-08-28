@@ -14,9 +14,13 @@ export async function GET(req: NextRequest) {
     let result
     if (roomId) {
       if (memberId) {
-        result = await supabase.from('competition_record').select('*').eq('roomId', roomId).eq('memberId', memberId)
+        result = await supabase
+          .from('competition_record')
+          .select('*')
+          .eq('competition_room_id', roomId)
+          .eq('member_id', memberId)
       } else {
-        result = await supabase.from('competition_record').select('*').eq('roomId', roomId)
+        result = await supabase.from('competition_record').select('*').eq('competition_room_id', roomId)
       }
     } else {
       result = await supabase.from('competition_record').select('*')
