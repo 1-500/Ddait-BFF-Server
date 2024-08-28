@@ -17,7 +17,9 @@ const handler = NextAuth({
     async signIn({ user, account, profile }) {
       try {
         const email = user.email
+        let user_level
         const { data, error } = await supabase.from('social_login').select('*').eq('email', email).single()
+
         if (!data) {
           const { data: insertData, error: insertError } = await supabase.from('social_login').insert([
             {
@@ -26,23 +28,16 @@ const handler = NextAuth({
               email: user.email,
             },
           ])
+
+          user_level = 0
           if (insertError) {
             return false
           }
-          await supabase.auth.signInWithIdToken({
-            provider: account?.provider,
-            token: account?.id_token,
-          })
         } else {
-          const { data: updateData, error: updateDataError } = await supabase
-            .from('social_login')
-            .update({ last_sign_in: new Date().toISOString() })
-            .eq('provider_user_id', provider_id)
-
-          if (updateDataError) {
-            return false
-          }
+          user_level = data.user_level
         }
+        user.user_level = user_level
+
         return true
       } catch (error) {
         return false
@@ -52,12 +47,14 @@ const handler = NextAuth({
       if (user) {
         token.id = user.id
         token.email = user.email
+        token.user_level = user.user_level
       }
       return token
     },
     async session({ session, token }) {
       session.user.id = token.id
       session.user.email = token.email
+      session.user.user_level = token.user_level
       return session
     },
   },
