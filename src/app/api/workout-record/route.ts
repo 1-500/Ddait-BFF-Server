@@ -1,4 +1,3 @@
-// src/app/api/workout-record/route.ts
 import { createClient } from '@/utils/supabase/client'
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
