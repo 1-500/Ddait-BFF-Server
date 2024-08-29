@@ -11,6 +11,18 @@ export async function POST(req: NextRequest) {
     const { email, password, nickname, birthdate, gender, location, preferred_sport } = await req.json()
     const hashedPassword = await bcrypt.hash(password, 10)
 
+    if (
+      email.length === 0 ||
+      password.length === 0 ||
+      nickname.length === 0 ||
+      birthdate.length === 0 ||
+      gender.length === 0 ||
+      location.length === 0 ||
+      preferred_sport.length == 0
+    ) {
+      return NextResponse.json({ messsage: '유저 입력에 빈값이 존재합니다' }, { status: 400 })
+    }
+
     const result = await supabase.from('member').insert({
       nickname,
       email,
@@ -22,7 +34,7 @@ export async function POST(req: NextRequest) {
       user_level: 1,
     })
 
-    console.log(result.error, nickname, email, password, birthdate, gender, preferred_sport, location)
+    console.log(result, result.error, nickname, email, password, birthdate, gender, preferred_sport, location)
     if (result.error) {
       return NextResponse.json({ message: result.error }, { status: result.status })
     }

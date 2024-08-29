@@ -9,16 +9,23 @@ export async function POST(req: NextRequest) {
 
     const { email, password } = await req.json()
 
+    const result = await supabase.from('member').select('*').eq('email', email).single()
+    const userId = result.data.id
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
 
-    console.log(email, password, data, error)
     if (error) {
       return NextResponse.json({ message: error.message }, { status: error.status })
     }
-    return NextResponse.json(data.session)
+
+    console.log(userId)
+    return NextResponse.json({
+      session: data.session,
+      userId: userId,
+    })
   } catch (error) {
     return NextResponse.json({ message: error })
   }
