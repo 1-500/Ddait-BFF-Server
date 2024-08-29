@@ -1,25 +1,54 @@
-// src/app/api/workout-record/route.ts
 import { createClient } from '@/utils/supabase/client'
 import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 
 export async function GET(req: NextRequest) {
   try {
     // URL에서 쿼리 파라미터 가져오기
     const { searchParams } = new URL(req.url)
     const user_id = searchParams.get('user_id')
-
+    const date = searchParams.get('date')
+    console.log(date)
     if (!user_id) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
     }
 
     // Supabase 서버 클라이언트 생성
-    const supabase = createClient()
+    const supabase = createClient(cookies())
+    let query = supabase
+      .from('workout_diary')
+      .select(
+        `
+      id,
+      member_id,
+      created_at,
+      edited_at,
+      workout_name,
+      workout_time,
+      exercise_info (
+        id,
+        exercise_name (
+          id,
+          name
+        ),
+        set,
+        reps,
+        weight
+      )
+    `,
+      )
+      .eq('member_id', user_id)
+
+    // 날짜가 제공된 경우, 해당 날짜의 기록만 필터링
+    if (date) {
+      const startDate = `${date}T00:00:00`
+      const endDate = `${date}T23:59:59` // 하루의 끝 시간
+      query = query.gte('created_at', startDate).lte('created_at', endDate)
+    }
 
     // Supabase에서 workout_diary 데이터 가져오기
-    const { data: workoutRecords, error } = await supabase
-      .from('workout_diary')
-      .select(`id,member_id,created_at,edited_at,workout_name,workout_time`)
-      .eq('member_id', user_id) // user_id 와 member_id가 같은 데이터만 가져오기
+    // 쿼리 실행
+    const { data: workoutRecords, error } = await query
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
@@ -39,7 +68,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const supabase = createClient()
+    const supabase = createClient(cookies())
 
     // workout_diary 테이블에 새로운 운동 기록 삽입
     const { data: workoutRecord, error: diaryError } = await supabase
@@ -56,8 +85,6 @@ export async function POST(req: NextRequest) {
       .maybeSingle()
 
     if (diaryError || !workoutRecord) {
-      console.log('workoutRecord', workoutRecord)
-      console.log('diaryError', diaryError)
       throw new Error('Failed to create workout record')
     }
 
@@ -110,7 +137,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const supabase = createClient()
+    const supabase = createClient(cookies())
 
     // workout_diary 테이블에서 기존 운동 기록 업데이트
     const { error: diaryError } = await supabase
@@ -202,7 +229,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Workout Diary ID is required' }, { status: 400 })
     }
 
-    const supabase = createClient()
+    const supabase = createClient(cookies())
 
     // exercise_info 테이블에서 해당 workout_diary_id와 연관된 모든 기록 삭제
     const { error: deleteExercisesError } = await supabase
