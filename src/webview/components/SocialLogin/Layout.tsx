@@ -8,6 +8,26 @@ const SocialLoginPageLayout = () => {
   const { data: session, status } = useSession()
 
   useEffect(() => {
+    const handleMessage = (event) => {
+      const message = JSON.parse(event.data)
+      console.log(message)
+      if (message.type === 'DDait_APP') {
+        if (message.data === 'google') {
+          signIn('google')
+        } else if (message.data === 'kakao') {
+          signIn('kakao')
+        }
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+
+    return () => {
+      window.removeEventListener('message', handleMessage)
+    }
+  }, [])
+
+  useEffect(() => {
     if (session && session.user) {
       const socialLogin = async () => {
         try {
@@ -40,7 +60,7 @@ const SocialLoginPageLayout = () => {
   }, [session])
   return (
     <div>
-      <Button onClick={() => signIn('google')}>구글로그인</Button>
+      <div>로딩중...</div>
     </div>
   )
 }
