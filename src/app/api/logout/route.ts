@@ -7,22 +7,14 @@ export async function POST(req: NextRequest) {
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
 
-    const { email, password } = await req.json()
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    const { error } = await supabase.auth.signOut()
 
     if (error) {
       return NextResponse.json({ message: error.message }, { status: error.status })
     }
-    const result = await supabase.from('member').select('*').eq('email', email).single()
-    const userId = result.data.id
 
     return NextResponse.json({
-      session: data.session,
-      userId: userId,
+      message: '로그아웃 성공',
       status: 200,
     })
   } catch (error) {

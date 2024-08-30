@@ -34,9 +34,8 @@ export async function POST(req: NextRequest) {
       user_level: 1,
     })
 
-    console.log(result, result.error, nickname, email, password, birthdate, gender, preferred_sport, location)
     if (result.error) {
-      return NextResponse.json({ message: result.error }, { status: result.status })
+      return NextResponse.json({ message: '입력 안한 항목이 존재합니다.' }, { status: result.status })
     }
 
     const { error: signUpError } = await supabase.auth.signUp({
@@ -45,12 +44,11 @@ export async function POST(req: NextRequest) {
     })
 
     if (signUpError) {
-      return NextResponse.json({ message: signUpError }, { status: signUpError.status })
+      return NextResponse.json({ message: '회원가입에 실패하였습니다.' }, { status: signUpError.status })
     }
 
     return NextResponse.json({ message: '계정이 생성되었습니다' }, { status: 200 })
   } catch (error) {
-    console.log(error, 1232345)
     return NextResponse.json({ message: error }, { status: 400 })
   }
 }
