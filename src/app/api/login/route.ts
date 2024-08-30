@@ -6,11 +6,11 @@ export async function POST(req: NextRequest) {
   try {
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
+    const userId = req.headers.get('X-User-Id')
+
+    console.log(userId)
 
     const { email, password } = await req.json()
-
-    const result = await supabase.from('member').select('*').eq('email', email).single()
-    const userId = result.data.id
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -21,7 +21,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: error.message }, { status: error.status })
     }
 
-    console.log(userId)
     return NextResponse.json({
       session: data.session,
       userId: userId,

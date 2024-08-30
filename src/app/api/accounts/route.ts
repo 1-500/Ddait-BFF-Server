@@ -34,7 +34,6 @@ export async function POST(req: NextRequest) {
       user_level: 1,
     })
 
-    console.log(result, result.error, nickname, email, password, birthdate, gender, preferred_sport, location)
     if (result.error) {
       return NextResponse.json({ message: result.error }, { status: result.status })
     }

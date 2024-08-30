@@ -34,7 +34,12 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.json({ status: 403 })
+    return NextResponse.json({ status: 403, message: '존재하지않는 유저입니다.' })
+  } else {
+    const email = user?.email
+    const result = await supabase.from('member').select('*').eq('email', email).single()
+    const userId = result.data.id
+    supabaseResponse.headers.set('X-User-Id', userId || '')
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
