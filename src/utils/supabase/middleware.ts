@@ -33,13 +33,20 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) {
-    return NextResponse.json({ status: 403, message: '존재하지않는 유저입니다.' })
-  } else {
-    const email = user?.email
-    const result = await supabase.from('member').select('*').eq('email', email).single()
-    const userId = result.data.id
-    supabaseResponse.headers.set('X-User-Id', userId || '')
+  if (request.nextUrl.pathname === '/api/login') {
+    return supabaseResponse
+  }
+  // 요청하는 부분이 login API일경우
+  else {
+    if (!user) {
+      return NextResponse.json({ status: 403, message: '존재하지않는 유저입니다.' })
+    } else {
+      const email = user?.email
+      const result = await supabase.from('member').select('*').eq('email', email).single()
+      const userId = result.data.id
+      supabaseResponse.headers.set('X-User-Id', userId || '')
+    }
+    return supabaseResponse
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
@@ -54,6 +61,4 @@ export async function updateSession(request: NextRequest) {
   //    return myNewResponse
   // If this is not done, you may be causing the browser and server to go out
   // of sync and terminate the user's session prematurely!
-
-  return supabaseResponse
 }
