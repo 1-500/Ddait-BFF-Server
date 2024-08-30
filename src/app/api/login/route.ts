@@ -6,9 +6,6 @@ export async function POST(req: NextRequest) {
   try {
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
-    const userId = req.headers.get('X-User-Id')
-
-    console.log(userId)
 
     const { email, password } = await req.json()
 
@@ -20,10 +17,13 @@ export async function POST(req: NextRequest) {
     if (error) {
       return NextResponse.json({ message: error.message }, { status: error.status })
     }
+    const result = await supabase.from('member').select('*').eq('email', email).single()
+    const userId = result.data.id
 
     return NextResponse.json({
       session: data.session,
       userId: userId,
+      status: 200,
     })
   } catch (error) {
     return NextResponse.json({ message: error })
