@@ -33,7 +33,7 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (request.nextUrl.pathname === '/api/login') {
+  if (request.nextUrl.pathname === '/api/login' || request.nextUrl.pathname === '/api/accounts') {
     return supabaseResponse
   }
   // 요청하는 부분이 login API일경우
