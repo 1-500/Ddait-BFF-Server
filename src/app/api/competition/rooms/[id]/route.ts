@@ -15,7 +15,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     const { id } = params
 
-    // 경쟁방 정보 조회
+    // 경쟁방 정보 + 참여자 수
     const { data: roomDetail, error } = await supabase
       .from('competition_room')
       .select(

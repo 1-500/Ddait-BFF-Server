@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: '유저 ID가 필요합니다.' }, { status: 400 })
     }
 
-    // 전체 경쟁방 목록 조회
+    // 경쟁방 목록 + 참여자 수 (기본: 내림차순)
     const { data: allRooms, error } = await supabase
       .from('competition_room')
       .select('*, current_members:competition_record(count)')
