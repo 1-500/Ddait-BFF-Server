@@ -8,36 +8,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
 
-    // 토큰 확인 로직 추가
-    const authHeader = req.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ message: '인증 토큰이 없거나 형식이 잘못되었습니다.' }, { status: 401 })
-    }
-    const token = authHeader.split(' ')[1]
-
-    // Supabase로 토큰 검증
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(token)
-    if (authError || !user) {
-      console.error('Auth error:', authError)
-      return NextResponse.json({ message: '유효하지 않은 토큰입니다.' }, { status: 401 })
+    const userId = req.headers.get('X-User-Id')
+    if (!userId) {
+      return NextResponse.json({ message: '유저 ID가 필요합니다.' }, { status: 400 })
     }
 
-    // member 테이블에서 현재 사용자의 ID 조회
-    const { data: memberData, error: memberError } = await supabase
-      .from('member')
-      .select('id')
-      .eq('email', user.email)
-      .single()
-
-    if (memberError || !memberData) {
-      console.error('Member fetch error:', memberError)
-      return NextResponse.json({ message: '사용자 정보를 찾을 수 없습니다.' }, { status: 404 })
-    }
-
-    const currentMemberId = memberData.id
     const { id } = params
 
     // 경쟁방 정보 조회
@@ -96,8 +71,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         smartwatch: roomDetail.smartwatch,
       },
       user_status: {
-        is_host: roomDetail.host_id === currentMemberId,
-        is_participant: memberIds.includes(currentMemberId),
+        is_host: roomDetail.host_id === userId,
+        is_participant: memberIds.includes(userId),
       },
       member_ids: memberIds,
     }
@@ -111,6 +86,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     )
   } catch (error) {
     console.error('Unexpected error:', error)
-    return NextResponse.json({ message: error.message || '예상치 못한 오류가 발생했습니다.' }, { status: 500 })
+    return NextResponse.json({ message: '예상치 못한 오류가 발생했습니다.' }, { status: 500 })
   }
 }
