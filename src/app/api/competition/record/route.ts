@@ -91,10 +91,19 @@ export async function POST(req: NextRequest) {
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
 
-    if (!body) {
+    if (!member_id || !competition_room_id) {
       // 요청 본문이 없거나 잘못된 경우 처리
       return NextResponse.json({ message: 'Invalid JSON body' }, { status: 400 })
     }
+
+    const responseData: any = {
+      data: {
+        competition_room: null,
+        competition_score: {},
+      },
+      status: 201,
+    }
+
     const competitionRoom = await supabase.from('competition_room').select('*').eq('id', competition_room_id).single()
     if (competitionRoom.error) {
       return NextResponse.json({ message: competitionRoom.error.message }, { status: competitionRoom.status })
@@ -114,6 +123,7 @@ export async function POST(req: NextRequest) {
       console.error('Supabase Insert into competition_record Error:', insertResult.error)
       return NextResponse.json({ message: insertResult.error.message }, { status: insertResult.status })
     }
+    responseData.data.competition_room = insertResult
 
     const competitionRecordId = insertResult.data.id
     if (!competitionRecordId) {
@@ -125,12 +135,21 @@ export async function POST(req: NextRequest) {
       case '웨이트트레이닝':
         switch (competitionRoom.data.competition_theme) {
           case '3대측정내기':
-            const deadliftInsertResult = await supabase.from('competition_score').insert([
-              {
-                competition_record_id: competitionRecordId,
-                exercise_name_id: 1,
-              },
-            ])
+            const deadliftInfo = await supabase.from('workout_info').select('id').eq('name', '데드리프트').single()
+            if (deadliftInfo.error) {
+              return NextResponse.json({ message: deadliftInfo.error.message }, { status: deadliftInfo.status })
+            }
+
+            const deadliftInsertResult = await supabase
+              .from('competition_score')
+              .insert([
+                {
+                  competition_record_id: competitionRecordId,
+                  workout_info_id: deadliftInfo.data.id,
+                },
+              ])
+              .select('*')
+              .single()
             if (deadliftInsertResult.error) {
               console.error('Supabase Insert into competition_score Error:', deadliftInsertResult.error)
               return NextResponse.json(
@@ -138,13 +157,23 @@ export async function POST(req: NextRequest) {
                 { status: deadliftInsertResult.status },
               )
             }
+            responseData.data.competition_score['데드리프트'] = deadliftInsertResult
 
-            const squatInsertResult = await supabase.from('competition_score').insert([
-              {
-                competition_record_id: competitionRecordId,
-                exercise_name_id: 2,
-              },
-            ])
+            const squatInfo = await supabase.from('workout_info').select('id').eq('name', '스쿼트').single()
+            if (squatInfo.error) {
+              return NextResponse.json({ message: squatInfo.error.message }, { status: squatInfo.status })
+            }
+
+            const squatInsertResult = await supabase
+              .from('competition_score')
+              .insert([
+                {
+                  competition_record_id: competitionRecordId,
+                  workout_info_id: squatInfo.data.id,
+                },
+              ])
+              .select('*')
+              .single()
             if (squatInsertResult.error) {
               console.error('Supabase Insert into competition_score Error:', squatInsertResult.error)
               return NextResponse.json(
@@ -152,13 +181,22 @@ export async function POST(req: NextRequest) {
                 { status: squatInsertResult.status },
               )
             }
+            responseData.data.competition_score['스쿼트'] = squatInsertResult
 
-            const benchpressInsertResult = await supabase.from('competition_score').insert([
-              {
-                competition_record_id: competitionRecordId,
-                exercise_name_id: 3,
-              },
-            ])
+            const benchpressInfo = await supabase.from('workout_info').select('id').eq('name', '벤치프레스').single()
+            if (benchpressInfo.error) {
+              return NextResponse.json({ message: benchpressInfo.error.message }, { status: benchpressInfo.status })
+            }
+            const benchpressInsertResult = await supabase
+              .from('competition_score')
+              .insert([
+                {
+                  competition_record_id: competitionRecordId,
+                  workout_info_id: benchpressInfo.data.id,
+                },
+              ])
+              .select('*')
+              .single()
             if (benchpressInsertResult.error) {
               console.error('Supabase Insert into competition_score Error:', benchpressInsertResult.error)
               return NextResponse.json(
@@ -166,6 +204,7 @@ export async function POST(req: NextRequest) {
                 { status: benchpressInsertResult.status },
               )
             }
+            responseData.data.competition_score['벤치프레스'] = benchpressInsertResult
 
             break
           default:
@@ -175,7 +214,7 @@ export async function POST(req: NextRequest) {
       default:
     }
 
-    return NextResponse.json({ data: insertResult, status: 201 })
+    return NextResponse.json(responseData)
   } catch (error) {
     console.error('Error in POST request:', error)
     return NextResponse.json({ message: error || 'Unknown error occurred' }, { status: 400 })
