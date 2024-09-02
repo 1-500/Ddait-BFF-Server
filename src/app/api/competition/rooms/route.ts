@@ -79,6 +79,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const supabase = createClient()
+    const userId = req.headers.get('X-User-Id')
+    
+    if (!userId) {
+      return NextResponse.json({ 
+        status: 400, 
+        message: '유저 ID가 필요합니다.' 
+      }, { status: 400 })
+    }
 
     const {
       title,
@@ -89,10 +97,9 @@ export async function POST(req: NextRequest) {
       end_date,
       is_private,
       smartwatch,
-      user_id,
     } = await req.json()
 
-    const { data: roomData } = await supabase
+    const { data: roomData, error: roomError } = await supabase
       .from('competition_room')
       .insert([
         {
@@ -104,17 +111,27 @@ export async function POST(req: NextRequest) {
           end_date,
           is_private,
           smartwatch,
+          host_id: userId,
         },
       ])
       .select()
       .single() // 단일 객체로 반환
 
+    if (roomError) {
+      return NextResponse.json({ message: `경쟁방 생성 중 오류 발생: ${roomError.message}`}, { status: 400 })
+    }
+
+    if (!roomData || !roomData.id) {
+      return NextResponse.json({ message: '경쟁방 생성에 실패했습니다.' }, { status: 500 })
+    }
+
     const responseData = {
       room_id: roomData.id,
       title: roomData.title,
     }
+
     return NextResponse.json({ message: '경쟁방이 성공적으로 생성되었습니다.', data: responseData }, { status: 201 })
   } catch (error) {
-    return NextResponse.json({ message: error.message || '예상치 못한 오류가 발생했습니다.' }, { status: 500 })
+    return NextResponse.json({ message: error.message || '예상치 못한 오류가 발생했습니다.'}, { status: 500 })
   }
 }
