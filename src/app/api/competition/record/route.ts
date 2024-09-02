@@ -86,10 +86,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { member_id, competition_room_id } = body
+    const { competition_room_id } = body
 
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
+    const userId = req.headers.get('X-User-Id')
 
     if (!member_id || !competition_room_id) {
       // 요청 본문이 없거나 잘못된 경우 처리
@@ -113,7 +114,7 @@ export async function POST(req: NextRequest) {
       .from('competition_record')
       .insert([
         {
-          member_id,
+          member_id : userId,
           competition_room_id,
         },
       ])
