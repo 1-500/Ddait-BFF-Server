@@ -11,39 +11,39 @@ export async function GET(req: NextRequest) {
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
 
+    if (!roomId) {
+      return NextResponse.json({ message: 'Invalid Request Params' }, { status: 400 })
+    }
+
     const responseData: any = []
 
     let competitionRecord
-    if (roomId) {
-      if (memberId) {
-        competitionRecord = await supabase
-          .from('competition_record')
-          .select('*')
-          .eq('competition_room_id', roomId)
-          .eq('member_id', memberId)
-      } else {
-        competitionRecord = await supabase.from('competition_record').select('*').eq('competition_room_id', roomId)
-      }
+    if (memberId) {
+      competitionRecord = await supabase
+        .from('competition_record')
+        .select('*')
+        .eq('competition_room_id', roomId)
+        .eq('member_id', memberId)
+        .single()
     } else {
-      competitionRecord = await supabase.from('competition_record').select('*')
+      competitionRecord = await supabase
+        .from('competition_record')
+        .select('*')
+        .eq('competition_room_id', roomId)
+        .order('total_score', { ascending: false })
     }
 
     if (competitionRecord.error) {
       return NextResponse.json({ message: competitionRecord.error.message }, { status: competitionRecord.status })
     }
 
-    for (const recordElement of (competitionRecord.data || []).sort((a, b) => {
-      if (roomId) {
-        return b.total_score - a.total_score
-      } else {
-        if (a.competition_room_id === b.competition_room_id) {
-          return b.total_score - a.total_score
-        } else {
-          return a.competition_room_id - b.competition_room_id
-        }
-      }
-    })) {
+    for (const recordElement of competitionRecord.data || []) {
       const scoreDetailData = []
+
+      const member = await supabase.from('member').select('nickname, profile_image').eq('id', recordElement.member_id)
+      if (member.error) {
+        return NextResponse.json({ message: member.error.message }, { status: member.status })
+      }
 
       const competitionScore = await supabase
         .from('competition_score')
@@ -53,27 +53,26 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ message: competitionScore.error.message }, { status: competitionScore.status })
       }
 
-      for (const scoreElement of (competitionScore.data || []).sort(
-        (a, b) => a.exercise_name_id - b.exercise_name_id,
-      )) {
-        const exerciseName = await supabase
-          .from('exercise_name')
+      for (const scoreElement of competitionScore.data || []) {
+        const workoutInfo = await supabase
+          .from('workout_info')
           .select('name')
-          .eq('id', scoreElement.exercise_name_id)
+          .eq('id', scoreElement.workout_info_id)
           .single()
-        if (exerciseName.error) {
-          return NextResponse.json({ message: exerciseName.error.message }, { status: exerciseName.status })
+        if (workoutInfo.error) {
+          return NextResponse.json({ message: workoutInfo.error.message }, { status: workoutInfo.status })
         }
 
         scoreDetailData.push({
-          name: exerciseName.data.name,
+          name: workoutInfo.data.name,
           score: scoreElement.score,
         })
       }
 
       responseData.push({
         ...recordElement,
-        score_detail: scoreDetailData,
+        member_info: member.data,
+        score_detail: scoreDetailData.sort((a, b) => a.name.localeCompare(b.name)),
       })
     }
 
