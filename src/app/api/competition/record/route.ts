@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
 
     const responseData: any = {
       data: {
-        competition_room: null,
+        competition_record: null,
         competition_score: {},
       },
       status: 201,
@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
       console.error('Supabase Insert into competition_record Error:', insertResult.error)
       return NextResponse.json({ message: insertResult.error.message }, { status: insertResult.status })
     }
-    responseData.data.competition_room = insertResult
+    responseData.data.competition_record = insertResult
 
     const competitionRecordId = insertResult.data.id
     if (!competitionRecordId) {
