@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
 
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
+    const userId = req.headers.get('X-User-Id')
 
     if (!roomId) {
       return NextResponse.json({ message: 'Invalid Request Params' }, { status: 400 })
@@ -60,7 +61,10 @@ export async function GET(req: NextRequest) {
       }
 
       responseData.push({
-        ...recordElement,
+        // ...recordElement,
+        rank: recordElement.rank,
+        total_score: recordElement.total_score,
+        is_my_record: recordElement.member_id === userId,
         member_info: member.data,
         score_detail: scoreDetailData.sort((a, b) => a.name.localeCompare(b.name)),
       })
