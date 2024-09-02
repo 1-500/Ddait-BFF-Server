@@ -100,12 +100,14 @@ export async function POST(req: NextRequest) {
 
     const workoutRecords = []
 
+    console.log(workout_records)
+
     for (const workout_record of workout_records) {
       // workout_info 테이블에 존재하는지 확인
       const { data: existingWorkoutInfo, error: workoutInfoError } = await supabase
         .from('workout_info')
         .select('id')
-        .eq('id', workout_record.workout_info.id)
+        .eq('name', workout_record.workout_info.name)
         .maybeSingle()
 
       if (workoutInfoError) {
