@@ -233,14 +233,14 @@ export async function DELETE(req: NextRequest) {
 
     const supabase = createClient(cookies())
 
-    // exercise_info 테이블에서 해당 workout_diary_id와 연관된 모든 기록 삭제
-    const { error: deleteExercisesError } = await supabase
-      .from('exercise_info')
+    // workout_record 테이블에서 해당 workout_diary_id와 연관된 모든 기록 삭제
+    const { error: deleteRecordsError } = await supabase
+      .from('workout_record')
       .delete()
       .eq('workout_diary_id', workout_diary_id)
 
-    if (deleteExercisesError) {
-      throw deleteExercisesError
+    if (deleteRecordsError) {
+      throw deleteRecordsError
     }
 
     // workout_diary 테이블에서 해당 workout_diary_id 기록 삭제
