@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, NextRequest } from 'next/server'
 import { createClient } from '@/utils/supabase/client'
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const supabase = createClient()
     const url = new URL(request.url)
@@ -13,8 +13,8 @@ export async function GET(request: Request) {
 
     const { data, error } = await supabase
       .from('member')
-      .select('introduce, profile_image, nickname, preferred_sport')
-      .ilike('nickname', `%${nickname}%`)
+      .select('introduce, profile_image, nickname, preferred_sport, id')
+      .ilike('nickname', `%${nickname}%`) // 부분 일치
 
     if (error) {
       return NextResponse.json({ message: error.message }, { status: 400 })
