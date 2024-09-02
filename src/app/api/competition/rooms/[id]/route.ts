@@ -1,26 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/client'
+import { cookies } from 'next/headers'
 
 // 경쟁방 상세 조회
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const supabase = createClient()
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
+
+    const userId = req.headers.get('X-User-Id')
+    if (!userId) {
+      return NextResponse.json({ message: '유저 ID가 필요합니다.' }, { status: 400 })
+    }
+
     const { id } = params
 
-    // 경쟁방 정보 + 참여자 수 조회
+    // 경쟁방 정보 + 참여자 수
     const { data: roomDetail, error } = await supabase
       .from('competition_room')
       .select(
         `
-          *,
-          current_members:competition_record(count)
-        `,
+        *,
+        current_members:competition_record(count)
+      `,
       )
       .eq('id', id)
       .single()
 
     if (error) {
-      console.error('supabase error', error)
+      console.error('Supabase error', error)
       return NextResponse.json({ message: '경쟁방 정보 조회 중 오류 발생', error: error.message }, { status: 400 })
     }
 
@@ -35,17 +43,38 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       .eq('competition_room_id', id)
 
     if (membersError) {
-      console.error('supabase error (members)', membersError)
+      console.error('Supabase error (members)', membersError)
       return NextResponse.json(
         { message: '참여자 목록 조회 중 오류 발생', error: membersError.message },
         { status: 400 },
       )
     }
 
+    const memberIds = members.map((member) => member.member_id)
+    console.log('Member IDs:', memberIds)
+
     const roomDetailData = {
-      ...roomDetail,
-      current_members: parseInt(roomDetail.current_members[0].count, 10),
-      member_ids: members.map((member) => member.member_id),
+      id: roomDetail.id,
+      title: roomDetail.title,
+      info: {
+        max_members: roomDetail.max_members,
+        current_members: parseInt(roomDetail.current_members[0].count, 10),
+        competition_type: roomDetail.competition_type,
+        competition_theme: roomDetail.competition_theme,
+      },
+      date: {
+        start_date: roomDetail.start_date,
+        end_date: roomDetail.end_date,
+      },
+      settings: {
+        is_private: roomDetail.is_private,
+        smartwatch: roomDetail.smartwatch,
+      },
+      user_status: {
+        is_host: roomDetail.host_id === userId,
+        is_participant: memberIds.includes(userId),
+      },
+      member_ids: memberIds,
     }
 
     return NextResponse.json(
@@ -57,6 +86,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     )
   } catch (error) {
     console.error('Unexpected error:', error)
-    return NextResponse.json({ message: error.message || '예상치 못한 오류가 발생했습니다.' }, { status: 500 })
+    return NextResponse.json({ message: '예상치 못한 오류가 발생했습니다.' }, { status: 500 })
   }
 }
