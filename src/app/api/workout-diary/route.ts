@@ -1,20 +1,26 @@
-import { createClient } from '@/utils/supabase/client'
+import { createClient } from '@/utils/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 
 export async function GET(req: NextRequest) {
   try {
     // URL에서 쿼리 파라미터 가져오기
-    const { searchParams } = new URL(req.url)
-    const user_id = searchParams.get('user_id')
+    // const { searchParams } = new URL(req.url)
+    const searchParams = req.nextUrl.searchParams
+    // const user_id = searchParams.get('user_id')
+    const userId = req.headers.get('X-User-Id')
     const date = searchParams.get('date')
+    const cookieStore = cookies()
+
+    console.log(userId)
     console.log(date)
-    if (!user_id) {
+
+    if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
     }
 
     // Supabase 서버 클라이언트 생성
-    const supabase = createClient(cookies())
+    const supabase = createClient(cookieStore)
     let query = supabase
       .from('workout_diary')
       .select(
@@ -23,11 +29,11 @@ export async function GET(req: NextRequest) {
       member_id,
       created_at,
       edited_at,
-      workout_name,
-      workout_time,
-      exercise_info (
+      title,
+      time,
+      workout_record (
         id,
-        exercise_name (
+        workout_info (
           id,
           name
         ),
@@ -37,7 +43,7 @@ export async function GET(req: NextRequest) {
       )
     `,
       )
-      .eq('member_id', user_id)
+      .eq('member_id', userId)
 
     // 날짜가 제공된 경우, 해당 날짜의 기록만 필터링
     if (date) {
@@ -49,6 +55,7 @@ export async function GET(req: NextRequest) {
     // Supabase에서 workout_diary 데이터 가져오기
     // 쿼리 실행
     const { data: workoutRecords, error } = await query
+    console.log(workoutRecords)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
@@ -60,6 +67,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// 운동기록 추가
 export async function POST(req: NextRequest) {
   try {
     const { member_id, workout_name, workout_time, exercises } = await req.json()
