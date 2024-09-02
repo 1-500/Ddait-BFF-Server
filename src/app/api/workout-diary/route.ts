@@ -69,23 +69,25 @@ export async function GET(req: NextRequest) {
 
 // 운동기록 추가
 export async function POST(req: NextRequest) {
-  try {
-    const { member_id, workout_name, workout_time, exercises } = await req.json()
+  const cookieStore = cookies()
+  const userId = req.headers.get('X-User-Id')
 
-    if (!member_id || !workout_name || !workout_time || !exercises || exercises.length === 0) {
+  try {
+    const { title, time, workout_records } = await req.json()
+
+    if (!userId || !title || !time || !workout_records || workout_records.length === 0) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const supabase = createClient(cookies())
+    const supabase = createClient(cookieStore)
 
-    // workout_diary 테이블에 새로운 운동 기록 삽입
     const { data: workoutRecord, error: diaryError } = await supabase
       .from('workout_diary')
       .insert([
         {
-          member_id,
-          workout_name,
-          workout_time,
+          member_id: userId,
+          title: title,
+          time: time,
           created_at: new Date().toISOString(),
         },
       ])
@@ -96,40 +98,43 @@ export async function POST(req: NextRequest) {
       throw new Error('Failed to create workout record')
     }
 
-    const exerciseRecords = []
+    const workoutRecords = []
 
-    for (const exercise of exercises) {
-      // exercise_name이 테이블에 존재하는지 확인
-      const { data: existingExercise, error: exerciseNameError } = await supabase
-        .from('exercise_name')
+    for (const workout_record of workout_records) {
+      // workout_info 테이블에 존재하는지 확인
+      const { data: existingWorkoutInfo, error: workoutInfoError } = await supabase
+        .from('workout_info')
         .select('id')
-        .eq('name', exercise.exercise_name)
+        .eq('id', workout_record.workout_info.id)
         .maybeSingle()
 
-      if (exerciseNameError) {
-        throw exerciseNameError
+      if (workoutInfoError) {
+        throw workoutInfoError
       }
 
-      if (!existingExercise) {
-        return NextResponse.json({ error: `Exercise name '${exercise.exercise_name}' does not exist` }, { status: 400 })
+      if (!existingWorkoutInfo) {
+        return NextResponse.json(
+          { error: `Exercise name '${workout_record.workout_info.id}' does not exist` },
+          { status: 400 },
+        )
       }
 
-      exerciseRecords.push({
+      workoutRecords.push({
         workout_diary_id: workoutRecord.id,
-        exercise_name_id: existingExercise.id,
-        set: exercise.set,
-        reps: exercise.reps,
-        weight: exercise.weight,
+        workout_info_id: existingWorkoutInfo.id,
+        set: workout_record.set,
+        reps: workout_record.reps,
+        weight: workout_record.weight,
       })
     }
 
-    const { error: exercisesError } = await supabase.from('exercise_info').insert(exerciseRecords)
+    const { error: workoutRecordError } = await supabase.from('workout_record').insert(workoutRecords)
 
-    if (exercisesError) {
-      throw exercisesError
+    if (workoutRecordError) {
+      throw workoutRecordError
     }
 
-    return NextResponse.json({ message: 'Workout record created successfully' }, { status: 201 })
+    return NextResponse.json({ message: '운동기록이 성공적으로 작성되었습니다.' }, { status: 201 })
   } catch (error: any) {
     console.log(error)
     return NextResponse.json({ error: error.message }, { status: 500 })
