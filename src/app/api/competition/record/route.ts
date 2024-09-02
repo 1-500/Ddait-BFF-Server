@@ -6,7 +6,6 @@ export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams
     const roomId = searchParams.get('roomId')
-    const memberId = searchParams.get('memberId')
 
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
@@ -18,20 +17,11 @@ export async function GET(req: NextRequest) {
     const responseData: any = []
 
     let competitionRecord
-    if (memberId) {
-      competitionRecord = await supabase
-        .from('competition_record')
-        .select('*')
-        .eq('competition_room_id', roomId)
-        .eq('member_id', memberId)
-        .single()
-    } else {
-      competitionRecord = await supabase
-        .from('competition_record')
-        .select('*')
-        .eq('competition_room_id', roomId)
-        .order('total_score', { ascending: false })
-    }
+    competitionRecord = await supabase
+      .from('competition_record')
+      .select('*')
+      .eq('competition_room_id', roomId)
+      .order('total_score', { ascending: false })
 
     if (competitionRecord.error) {
       return NextResponse.json({ message: competitionRecord.error.message }, { status: competitionRecord.status })
