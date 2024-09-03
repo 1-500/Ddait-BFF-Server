@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
+import { getEndOfDay, getStartOfDay } from '@/utils/shared/date'
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,6 +13,12 @@ export async function POST(req: NextRequest) {
     const { userWeight, carbRatio, proteinRatio, fatRatio, total_calories } = await req.json()
     const userId = req.headers.get('X-User-Id')
 
+    if (date === null) {
+      return NextResponse.json({
+        error: '날짜를 입력해주세요',
+        status: 400,
+      })
+    }
     const memberResult = await supabase.from('food_diary').select('*').eq('member_id', userId)
 
     if (!memberResult.data?.length) {
@@ -25,15 +32,13 @@ export async function POST(req: NextRequest) {
       })
       if (foodDiaryResult.error) {
         return NextResponse.json({
-          message: '데이터를 넣는데 실패하였습니다!',
+          error: foodDiaryResult.error.message,
           status: foodDiaryResult.status,
         })
       }
     } else {
-      const dateObj = new Date(date)
-      const startOfDay = new Date(dateObj.setHours(0, 0, 0, 0) + 9 * 60 * 60 * 1000).toISOString()
-      const endOfDay = new Date(dateObj.setHours(23, 59, 59, 999) + 9 * 60 * 60 * 1000).toISOString()
-      // day .js로 변경?
+      const startOfDay = getStartOfDay(date)
+      const endOfDay = getEndOfDay(date)
 
       await supabase
         .from('food_diary')
