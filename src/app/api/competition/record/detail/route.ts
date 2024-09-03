@@ -6,15 +6,19 @@ export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams
     const roomId = searchParams.get('roomId')
-    const memberId = searchParams.get('memberId')
 
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
+    const userId = req.headers.get('X-User-Id')
+
+    if (!roomId) {
+      return NextResponse.json({ message: 'Invalid Request Params' }, { status: 400 })
+    }
 
     const responseData: any = {
-      weight: null,
       rank: null,
       total_score: null,
+      member_info: {},
       score_detail: [],
     }
 
@@ -23,20 +27,20 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: competitionRoom.error.message }, { status: competitionRoom.status })
     }
 
-    // weight
-    const member = await supabase.from('member').select('weight').eq('id', memberId).single()
+    // member_info
+    const member = await supabase.from('member').select('nickname, profile_image, weight').eq('id', userId).single()
     if (member.error) {
       return NextResponse.json({ message: member.error.message }, { status: member.status })
     }
 
-    responseData.weight = member.data.weight
+    responseData.member_info = member.data
 
     // total_score
     const competitionRecord = await supabase
       .from('competition_record')
       .select('*')
       .eq('competition_room_id', roomId)
-      .eq('member_id', memberId)
+      .eq('member_id', userId)
       .single()
     if (competitionRecord.error) {
       return NextResponse.json({ message: competitionRecord.error.message }, { status: competitionRecord.status })
@@ -62,19 +66,19 @@ export async function GET(req: NextRequest) {
       }
 
       // score_detail[i].name
-      const exerciseName = await supabase
-        .from('exercise_name')
+      const workoutInfo = await supabase
+        .from('workout_info')
         .select('*')
-        .eq('id', scoreElement.exercise_name_id)
+        .eq('id', scoreElement.workout_info_id)
         .single()
-      if (exerciseName.error) {
-        return NextResponse.json({ message: exerciseName.error.message }, { status: exerciseName.status })
+      if (workoutInfo.error) {
+        return NextResponse.json({ message: workoutInfo.error.message }, { status: workoutInfo.status })
       }
 
-      scoreData.name = exerciseName.data.name
+      scoreData.name = workoutInfo.data.name
 
       // score_detail[i].diary
-      const workoutDiary = await supabase.from('workout_diary').select('*').eq('member_id', memberId)
+      const workoutDiary = await supabase.from('workout_diary').select('*').eq('member_id', userId)
       if (workoutDiary.error) {
         return NextResponse.json({ message: workoutDiary.error.message }, { status: workoutDiary.status })
       }
@@ -89,16 +93,16 @@ export async function GET(req: NextRequest) {
         }
 
         if (diaryData.created_at >= startDate && diaryData.created_at <= endDate) {
-          const exerciseInfo = await supabase
-            .from('exercise_info')
+          const workoutRecord = await supabase
+            .from('workout_record')
             .select('set, weight, reps')
             .eq('workout_diary_id', diaryElement.id)
-            .eq('exercise_name_id', exerciseName.data.id)
-          if (exerciseInfo.error) {
-            return NextResponse.json({ message: exerciseInfo.error.message }, { status: exerciseInfo.status })
+            .eq('workout_info_id', workoutInfo.data.id)
+          if (workoutRecord.error) {
+            return NextResponse.json({ message: workoutRecord.error.message }, { status: workoutRecord.status })
           }
 
-          diaryData.record = (exerciseInfo.data || []).sort((a, b) => a.set - b.set)
+          diaryData.record = (workoutRecord.data || []).sort((a, b) => a.set - b.set)
           if (diaryData.record.length > 0) {
             scoreData.diary.push(diaryData)
           }
