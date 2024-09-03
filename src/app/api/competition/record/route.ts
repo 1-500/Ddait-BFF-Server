@@ -31,7 +31,11 @@ export async function GET(req: NextRequest) {
     for (const recordElement of competitionRecord.data || []) {
       const scoreDetailData = []
 
-      const member = await supabase.from('member').select('nickname, profile_image').eq('id', recordElement.member_id)
+      const member = await supabase
+        .from('member')
+        .select('nickname, profile_image')
+        .eq('id', recordElement.member_id)
+        .single()
       if (member.error) {
         return NextResponse.json({ message: member.error.message }, { status: member.status })
       }
