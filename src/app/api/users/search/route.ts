@@ -21,10 +21,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (data.length === 0) {
-      return NextResponse.json({ message: `${nickname}을 포함한 닉네임을 가진 유저가 없어요.`}, { status:  204 })
+      return NextResponse.json({ message: `'${nickname}'을 포함한 닉네임을 가진 유저가 없어요.`, data: [] }, { status: 200 })
     }
-
     return NextResponse.json(data, { status: 200 })
+
   } catch (error) {
     return NextResponse.json({ message: error.message || 'An unexpected error occurred' }, { status: 500 })
   }
