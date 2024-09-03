@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (data.length === 0) {
-      return NextResponse.json({ message: '해당 닉네임을 포함하는 유저를 찾을 수 없습니다.' }, { status: 404 })
+      return NextResponse.json({ message: `${nickname}을 포함한 닉네임을 가진 유저가 없어요.`, data}, { status: 200 })
     }
 
     return NextResponse.json(data, { status: 200 })
