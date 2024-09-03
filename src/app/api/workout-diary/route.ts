@@ -5,9 +5,7 @@ import { cookies } from 'next/headers'
 export async function GET(req: NextRequest) {
   try {
     // URL에서 쿼리 파라미터 가져오기
-    // const { searchParams } = new URL(req.url)
     const searchParams = req.nextUrl.searchParams
-    // const user_id = searchParams.get('user_id')
     const userId = req.headers.get('X-User-Id')
     const date = searchParams.get('date')
     const cookieStore = cookies()
@@ -53,9 +51,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Supabase에서 workout_diary 데이터 가져오기
-    // 쿼리 실행
     const { data: workoutRecords, error } = await query
-    console.log(workoutRecords)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
@@ -100,8 +96,6 @@ export async function POST(req: NextRequest) {
 
     const workoutRecords = []
 
-    console.log(workout_records)
-
     for (const workout_record of workout_records) {
       // workout_info 테이블에 존재하는지 확인
       const { data: existingWorkoutInfo, error: workoutInfoError } = await supabase
@@ -111,12 +105,15 @@ export async function POST(req: NextRequest) {
         .maybeSingle()
 
       if (workoutInfoError) {
-        throw workoutInfoError
+        return NextResponse.json(
+          { error: `운동 정보 조회 중 오류가 발생했습니다 : ${workoutInfoError.message}` },
+          { status: 500 },
+        )
       }
 
       if (!existingWorkoutInfo) {
         return NextResponse.json(
-          { error: `Exercise name '${workout_record.workout_info.id}' does not exist` },
+          { error: `이름이 '${workout_record.workout_info.id}' 인 운동 정보는 존재하지 않습니다.` },
           { status: 400 },
         )
       }
@@ -133,7 +130,7 @@ export async function POST(req: NextRequest) {
     const { error: workoutRecordError } = await supabase.from('workout_record').insert(workoutRecords)
 
     if (workoutRecordError) {
-      throw workoutRecordError
+      return NextResponse.json({ error: workoutRecordError.message }, { status: 500 })
     }
 
     return NextResponse.json({ message: '운동기록이 성공적으로 작성되었습니다.' }, { status: 201 })
@@ -176,7 +173,10 @@ export async function PUT(req: NextRequest) {
       .eq('workout_diary_id', workout_diary_id)
 
     if (deleteError) {
-      throw deleteError
+      return NextResponse.json(
+        { error: `운동 기록 삭제 중 문제가 발생했습니다. : ${deleteError.message}` },
+        { status: 500 },
+      )
     }
 
     // 새로운 workout_record 데이터 삽입
