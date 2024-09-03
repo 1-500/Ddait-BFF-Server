@@ -12,7 +12,6 @@ export async function GET(req: NextRequest) {
     const meal_time = searchParams.get('meal_time')
 
     const userId = req.headers.get('X-User-Id')
-    console.log(meal_time, date, userId)
 
     const dateObj = new Date(date)
     const startOfDay = new Date(dateObj.setHours(0, 0, 0, 0) + 9 * 60 * 60 * 1000).toISOString()
@@ -88,7 +87,6 @@ export async function GET(req: NextRequest) {
         calories: food.calories,
       })
     }
-    console.log(userFoodList)
 
     return NextResponse.json({
       data: userFoodList,
