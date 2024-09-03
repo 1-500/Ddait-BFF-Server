@@ -105,10 +105,7 @@ export async function POST(req: NextRequest) {
         .maybeSingle()
 
       if (workoutInfoError) {
-        return NextResponse.json(
-          { error: `운동 정보 조회 중 오류가 발생했습니다 : ${workoutInfoError.message}` },
-          { status: 500 },
-        )
+        return NextResponse.json({ error: workoutInfoError.message }, { status: 500 })
       }
 
       if (!existingWorkoutInfo) {
