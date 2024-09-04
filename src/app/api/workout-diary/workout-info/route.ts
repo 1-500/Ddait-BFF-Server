@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/client'
+import { createClient } from '@/utils/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 
@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
     const supabase = createClient(cookies())
 
     // exercise_name 테이블의 모든 데이터를 가져옴
-    const { data: exerciseNames, error } = await supabase.from('exercise_name').select('id, name, description')
+    const { data: exerciseNames, error } = await supabase.from('workout_info').select('id, name, description')
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
