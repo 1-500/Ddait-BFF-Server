@@ -37,10 +37,11 @@ export async function GET(req: NextRequest) {
       .or(`is_private.eq.false,id.in.(${userRoomIds.join(',')})`)
 
     if (fetchRoomsError) {
-      return NextResponse.json({ message: '경쟁방 목록 조회 중 오류 발생' }, { status: fetchRoomsError.status })
+      return NextResponse.json(
+        { message: '경쟁방 목록 조회 중 오류 발생', error: fetchRoomsError.message },
+        { status: fetchRoomsError.status },
+      )
     }
-
-    const userParticipationSet = new Set(userRoomIds)
 
     const allRoomsData = rooms.map((room) => ({
       id: room.id,
@@ -61,7 +62,7 @@ export async function GET(req: NextRequest) {
       },
       user_status: {
         is_host: room.host_id === userId,
-        is_participant: userParticipationSet.has(room.id),
+        is_participant: userRoomIds.includes(room.id),
       },
     }))
 
