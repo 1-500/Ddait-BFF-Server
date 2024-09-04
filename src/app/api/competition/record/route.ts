@@ -372,3 +372,48 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ message: error || 'Unknown error occurred' }, { status: 400 })
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const body = await req.json()
+    const { competition_room_id } = body
+
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
+    const userId = req.headers.get('X-User-Id')
+
+    if (!competition_room_id) {
+      // 요청 본문이 없거나 잘못된 경우 처리
+      return NextResponse.json({ message: 'Invalid JSON body' }, { status: 400 })
+    }
+
+    if (!userId) {
+      return NextResponse.json(
+        {
+          status: 400,
+          message: '유저 ID가 필요합니다.',
+        },
+        { status: 400 },
+      )
+    }
+
+    const competitionRecord = await supabase
+      .from('competition_record')
+      .select('id')
+      .eq('competition_room_id', competition_room_id)
+      .eq('member_id', userId)
+      .single()
+    if (competitionRecord.error) {
+      return NextResponse.json({ message: competitionRecord.error.message }, { status: competitionRecord.status })
+    }
+
+    const res = await supabase.from('competition_record').delete().eq('id', competitionRecord.data.id)
+    if (res.error) {
+      return NextResponse.json({ message: res.error.message }, { status: res.status })
+    }
+
+    return NextResponse.json({ message: 'Data deleted successfully' }, { status: 200 })
+  } catch (error) {
+    return NextResponse.json({ message: error || '예상치 못한 오류가 발생했습니다.' }, { status: 500 })
+  }
+}
