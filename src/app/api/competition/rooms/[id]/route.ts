@@ -51,7 +51,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }
 
     const memberIds = members.map((member) => member.member_id)
-    console.log('Member IDs:', memberIds)
 
     const roomDetailData = {
       id: roomDetail.id,
@@ -74,7 +73,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         is_host: roomDetail.host_id === userId,
         is_participant: memberIds.includes(userId),
       },
-      member_ids: memberIds,
     }
 
     return NextResponse.json(
