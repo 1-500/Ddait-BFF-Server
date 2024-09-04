@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
+import { getEndOfDay, getStartOfDay } from '@/utils/shared/date'
 
 // 사용자가 보내준 날짜와 식사시간 기준으로 조회
 export async function GET(req: NextRequest) {
@@ -11,11 +12,17 @@ export async function GET(req: NextRequest) {
     const date = searchParams.get('date')
     const mealTime = searchParams.get('meal_time')
 
-    const userId = req.headers.get('X-User-Id')
+    if (date === null) {
+      return NextResponse.json({
+        error: '날짜를 입력해주세요',
+        status: 400,
+      })
+    }
 
-    const dateObj = new Date(date)
-    const startOfDay = new Date(dateObj.setHours(0, 0, 0, 0) + 9 * 60 * 60 * 1000).toISOString()
-    const endOfDay = new Date(dateObj.setHours(23, 59, 59, 999) + 9 * 60 * 60 * 1000).toISOString()
+    const userId = req.headers.get('X-User-Id')
+    const startOfDay = getStartOfDay(date)
+    const endOfDay = getEndOfDay(date)
+
     const memberFoodDiary = await supabase
       .from('food_diary')
       .select('*')
