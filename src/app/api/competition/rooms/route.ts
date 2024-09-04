@@ -13,23 +13,42 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: '유저 ID가 필요합니다.' }, { status: 400 })
     }
 
-    // 경쟁방 목록 + 참여자 수 (기본: 내림차순)
-    const { data: allRooms, error } = await supabase
-      .from('competition_room')
-      .select('*, current_members:competition_record(count)')
-      .order('start_date', { ascending: false })
+    // 사용자가 참여한 방 ID 조회
+    const { data: userRooms, error: userRoomsError } = await supabase
+      .from('competition_record')
+      .select('competition_room_id')
+      .eq('member_id', userId)
 
-    if (error) {
-      console.error('Supabase error', error)
-      return NextResponse.json({ message: '경쟁방 목록 조회 중 오류 발생' }, { status: 400 })
+    if (userRoomsError) {
+      return NextResponse.json({ message: '사용자 참여 방 조회 중 오류 발생' }, { status: userRoomsError.status })
     }
 
-    const allRoomsData = allRooms.map((room) => ({
+    const userRoomIds = userRooms.map((room) => room.competition_room_id)
+
+    // 공개방 + 내가 참여한 비공개방
+    const { data: rooms, error: fetchRoomsError } = await supabase
+      .from('competition_room')
+      .select(
+        `
+        *,
+        competition_record (count)
+      `,
+      )
+      .or(`is_private.eq.false,id.in.(${userRoomIds.join(',')})`)
+
+    if (fetchRoomsError) {
+      return NextResponse.json(
+        { message: '경쟁방 목록 조회 중 오류 발생', error: fetchRoomsError.message },
+        { status: fetchRoomsError.status },
+      )
+    }
+
+    const allRoomsData = rooms.map((room) => ({
       id: room.id,
       title: room.title,
       info: {
         max_members: room.max_members,
-        current_members: parseInt(room.current_members[0]?.count || '0', 10),
+        current_members: room.competition_record[0].count,
         competition_type: room.competition_type,
         competition_theme: room.competition_theme,
       },
@@ -43,24 +62,9 @@ export async function GET(req: NextRequest) {
       },
       user_status: {
         is_host: room.host_id === userId,
-        is_participant: false, // 아래에서 업데이트
+        is_participant: userRoomIds.includes(room.id),
       },
     }))
-
-    // 경쟁방 참여 여부 확인
-    const { data: participations, error: participationError } = await supabase
-      .from('competition_record')
-      .select('competition_room_id')
-      .eq('member_id', userId)
-
-    if (participationError) {
-      console.error('Participation check error', participationError)
-    } else {
-      const participatedRoomIds = new Set(participations.map((p) => p.competition_room_id))
-      allRoomsData.forEach((room) => {
-        room.user_status.is_participant = participatedRoomIds.has(room.id)
-      })
-    }
 
     return NextResponse.json(
       {
@@ -70,8 +74,7 @@ export async function GET(req: NextRequest) {
       { status: 200 },
     )
   } catch (error) {
-    console.error('Unexpected error:', error)
-    return NextResponse.json({ message: '예상치 못한 오류가 발생했습니다.' }, { status: 500 })
+    return NextResponse.json({ message: '예상치 못한 오류가 발생했습니다.' }, { status: error.status })
   }
 }
 

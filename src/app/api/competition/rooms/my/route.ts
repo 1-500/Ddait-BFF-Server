@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     }
 
     // 내 경쟁방 정보 + 참여자 수
-    const { data: userRooms, error } = await supabase
+    const { data: userRooms, error: fetchMyroomError } = await supabase
       .from('competition_record')
       .select(
         `
@@ -26,9 +26,11 @@ export async function GET(req: NextRequest) {
       )
       .eq('member_id', userId)
 
-    if (error) {
-      console.error('Supabase error', error)
-      return NextResponse.json({ message: '경쟁방 목록 조회 중 오류 발생' }, { status: 400 })
+    if (fetchMyroomError) {
+      return NextResponse.json(
+        { message: '경쟁방 목록 조회 중 오류 발생', error: fetchMyroomError.message },
+        { status: fetchMyroomError.status },
+      )
     }
 
     const userRoomsData = userRooms.map((room) => ({
@@ -62,7 +64,6 @@ export async function GET(req: NextRequest) {
       { status: 200 },
     )
   } catch (error) {
-    console.error('Unexpected error:', error)
     return NextResponse.json({ message: '예상치 못한 오류가 발생했습니다.' }, { status: 500 })
   }
 }
