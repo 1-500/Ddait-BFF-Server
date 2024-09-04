@@ -20,14 +20,13 @@ export async function GET(req: NextRequest) {
       .eq('member_id', userId)
 
     if (userRoomsError) {
-      console.error('User rooms error', userRoomsError)
-      return NextResponse.json({ message: '사용자 참여 방 조회 중 오류 발생' }, { status: 400 })
+      return NextResponse.json({ message: '사용자 참여 방 조회 중 오류 발생' }, { status: userRoomsError.status })
     }
 
     const userRoomIds = userRooms.map((room) => room.competition_room_id)
 
     // 공개방 + 내가 참여한 비공개방
-    const { data: rooms, error } = await supabase
+    const { data: rooms, error: fetchRoomsError } = await supabase
       .from('competition_room')
       .select(
         `
@@ -37,9 +36,8 @@ export async function GET(req: NextRequest) {
       )
       .or(`is_private.eq.false,id.in.(${userRoomIds.join(',')})`)
 
-    if (error) {
-      console.error('Supabase error', error)
-      return NextResponse.json({ message: '경쟁방 목록 조회 중 오류 발생' }, { status: 400 })
+    if (fetchRoomsError) {
+      return NextResponse.json({ message: '경쟁방 목록 조회 중 오류 발생' }, { status: fetchRoomsError.status })
     }
 
     const userParticipationSet = new Set(userRoomIds)
@@ -75,8 +73,7 @@ export async function GET(req: NextRequest) {
       { status: 200 },
     )
   } catch (error) {
-    console.error('Unexpected error:', error)
-    return NextResponse.json({ message: '예상치 못한 오류가 발생했습니다.' }, { status: 500 })
+    return NextResponse.json({ message: '예상치 못한 오류가 발생했습니다.' }, { status: error.status })
   }
 }
 
