@@ -9,14 +9,14 @@ export async function GET(req: NextRequest) {
     const supabase = createClient(cookieStore)
     const { searchParams } = new URL(req.url)
     const date = searchParams.get('date')
-    const meal_time = searchParams.get('meal_time')
+    const mealTime = searchParams.get('meal_time')
 
     const userId = req.headers.get('X-User-Id')
 
     const dateObj = new Date(date)
     const startOfDay = new Date(dateObj.setHours(0, 0, 0, 0) + 9 * 60 * 60 * 1000).toISOString()
     const endOfDay = new Date(dateObj.setHours(23, 59, 59, 999) + 9 * 60 * 60 * 1000).toISOString()
-    const member_food_diary = await supabase
+    const memberFoodDiary = await supabase
       .from('food_diary')
       .select('*')
       .eq('member_id', userId)
@@ -25,25 +25,25 @@ export async function GET(req: NextRequest) {
       .single()
 
     let food_diary_id
-    if (member_food_diary.data) {
-      const { id } = member_food_diary.data
+    if (memberFoodDiary.data) {
+      const { id } = memberFoodDiary.data
       food_diary_id = id
     } else {
       return NextResponse.json({
-        error: member_food_diary.error?.message,
-        status: member_food_diary.status,
+        error: memberFoodDiary.error?.message,
+        status: memberFoodDiary.status,
       })
     }
 
-    const food_record_list = await supabase
+    const foodRecordList = await supabase
       .from('food_record')
       .select('*')
       .eq('food_diary_id', food_diary_id)
-      .eq('meal_time', meal_time)
+      .eq('meal_time', mealTime)
 
     const foodRecordInfoList = []
-    if (food_record_list.data) {
-      for (const food of food_record_list.data) {
+    if (foodRecordList.data) {
+      for (const food of foodRecordList.data) {
         const result = await supabase.from('food_record_info').select('*').eq('id', food.food_record_id).single()
         if (result.error) {
           return NextResponse.json({
@@ -63,8 +63,8 @@ export async function GET(req: NextRequest) {
       }
     } else {
       return NextResponse.json({
-        error: food_record_list.error?.message,
-        status: food_record_list.status,
+        error: foodRecordList.error?.message,
+        status: foodRecordList.status,
       })
     }
 
