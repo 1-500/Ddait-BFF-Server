@@ -19,10 +19,25 @@ export async function POST(req: NextRequest) {
         status: 400,
       })
     }
-    const memberResult = await supabase.from('food_diary').select('*').eq('member_id', userId)
 
-    if (!memberResult.data?.length) {
-      const foodDiaryResult = await supabase.from('food_diary').insert({
+    const startOfDay = getStartOfDay(date)
+    const endOfDay = getEndOfDay(date)
+
+    const { data: foodDiarySearchResult, error: foodDiarySearchError } = await supabase
+      .from('food_diary')
+      .select('*')
+      .gte('created_at', startOfDay)
+      .lt('created_at', endOfDay)
+
+    if (foodDiarySearchError) {
+      return NextResponse.json({
+        error: foodDiarySearchError.message,
+        status: foodDiarySearchError.code,
+      })
+    }
+
+    if (!foodDiarySearchResult?.length) {
+      const foodDiaryInsertResult = await supabase.from('food_diary').insert({
         carb_ratio: carbRatio,
         protein_ratio: proteinRatio,
         fat_ratio: fatRatio,
@@ -30,16 +45,18 @@ export async function POST(req: NextRequest) {
         member_id: userId,
         current_weight: userWeight,
       })
-      if (foodDiaryResult.error) {
+      if (foodDiaryInsertResult.error) {
         return NextResponse.json({
-          error: foodDiaryResult.error.message,
-          status: foodDiaryResult.status,
+          error: foodDiaryInsertResult.error.message,
+          status: foodDiaryInsertResult.status,
+        })
+      } else {
+        return NextResponse.json({
+          error: '데이터를 삽입 하였습니다.',
+          status: 200,
         })
       }
     } else {
-      const startOfDay = getStartOfDay(date)
-      const endOfDay = getEndOfDay(date)
-
       await supabase
         .from('food_diary')
         .update({
@@ -53,6 +70,7 @@ export async function POST(req: NextRequest) {
         .gte('created_at', startOfDay)
         .lt('created_at', endOfDay)
     }
+
     return NextResponse.json({
       message: '데이터를 삽입 하였습니다!',
       status: 200,
