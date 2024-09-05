@@ -5,6 +5,7 @@ export async function POST(req: NextRequest) {
   try {
     const supabase = createClient()
     const userId = req.headers.get('X-User-Id')
+
     if (!userId) {
       return NextResponse.json(
         {
@@ -17,6 +18,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { friend_member_id } = await req.json()
+
     if (!friend_member_id) {
       return NextResponse.json(
         {
@@ -38,6 +40,57 @@ export async function POST(req: NextRequest) {
         },
         { status: 400 },
       )
+    }
+
+    // 친구 관계가 이미 있는지 확인 
+    const { data: existingFriendData, error: existingFriendError } = await supabase
+      .from('friends')
+      .select('status, member_id, friend_member_id')
+      .or(`member_id.eq.${userId},friend_member_id.eq.${friend_member_id}`)
+      .or(`member_id.eq.${friend_member_id},friend_member_id.eq.${userId}`)
+      .single()
+
+    if (existingFriendData) {
+      const { status, member_id, friend_member_id } = existingFriendData
+
+      // 사용자가 친구 요청을 보낸 상태
+      if (member_id === userId && status === '대기 중') {
+        return NextResponse.json(
+          {
+            status: 400,
+            error: 'Bad Request',
+            message: '이미 친구 요청을 보냈습니다. 승인을 기다려주세요.',
+            friendStatus: status,
+          },
+          { status: 400 },
+        )
+      }
+
+      // 상대방이 친구 요청을 보낸 상태
+      if (friend_member_id === userId && status === '대기 중') {
+        return NextResponse.json(
+          {
+            status: 400,
+            error: 'Bad Request',
+            message: '상대방이 친구 요청을 보냈습니다. 친구 요청을 수락하세요.',
+            friendStatus: status,
+          },
+          { status: 400 },
+        )
+      }
+
+      // 이미 친구 상태
+      if (status === '친구 승인') {
+        return NextResponse.json(
+          {
+            status: 400,
+            error: 'Bad Request',
+            message: '이미 친구 관계입니다.',
+            friendStatus: status,
+          },
+          { status: 400 },
+        )
+      }
     }
 
     // friend_member_id가 member table에 있는지 확인
