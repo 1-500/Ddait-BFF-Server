@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     if (!searchUserData.length) {
       return NextResponse.json({ message: `'${nickname}'을 포함한 닉네임을 가진 유저가 없어요.`, data: [] }, { status: 200 })
     }
-    return NextResponse.json(searchUserData, { status: 200 })
+    return NextResponse.json({ message: '검색에 성공했습니다.', data: searchUserData}, { status: 200 })
 
   } catch (error) {
     return NextResponse.json({ message: error.message || 'An unexpected error occurred' }, { status: error.status })
