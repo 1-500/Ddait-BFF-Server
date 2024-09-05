@@ -13,6 +13,11 @@ export async function POST(req: NextRequest) {
     const { foodItems, meal_time, date } = await req.json()
 
     console.log(foodItems, meal_time, date)
+
+    // 1. food_diary에서 오늘날짜에 해당되는 id값을 가져온다.
+    // 2. food_record 테이블에 row을 생성 이떄 food_diary의 id값과 연결 , meal_time필요
+    // 3. food_record_info 테이블에 사용자의 음식 데이터를 기록 , 그리고 해당음식과 food_info_id와 연결
+    // 4. food_record 테이블의 food_record_id와 food_record_info id값과 연결
     if (date === null) {
       return NextResponse.json({
         error: '날짜를 입력해주세요',
