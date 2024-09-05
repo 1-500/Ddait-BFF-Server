@@ -16,7 +16,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const { id } = params
 
     // 경쟁방 정보 + 참여자 수
-    const { data: roomDetail, error } = await supabase
+    const { data: roomDetail, error: roomDetailError } = await supabase
       .from('competition_room')
       .select(
         `
@@ -27,9 +27,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       .eq('id', id)
       .single()
 
-    if (error) {
-      console.error('Supabase error', error)
-      return NextResponse.json({ message: '경쟁방 정보 조회 중 오류 발생', error: error.message }, { status: 400 })
+    if (roomDetailError) {
+      return NextResponse.json(
+        { message: '경쟁방 정보 조회 중 오류 발생', error: roomDetailError.message },
+        { status: roomDetailError.status },
+      )
     }
 
     if (!roomDetail) {
@@ -43,7 +45,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       .eq('competition_room_id', id)
 
     if (membersError) {
-      console.error('Supabase error (members)', membersError)
       return NextResponse.json(
         { message: '참여자 목록 조회 중 오류 발생', error: membersError.message },
         { status: 400 },
@@ -51,7 +52,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }
 
     const memberIds = members.map((member) => member.member_id)
-    console.log('Member IDs:', memberIds)
 
     const roomDetailData = {
       id: roomDetail.id,
@@ -74,7 +74,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         is_host: roomDetail.host_id === userId,
         is_participant: memberIds.includes(userId),
       },
-      member_ids: memberIds,
     }
 
     return NextResponse.json(
@@ -85,7 +84,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       { status: 200 },
     )
   } catch (error) {
-    console.error('Unexpected error:', error)
     return NextResponse.json({ message: '예상치 못한 오류가 발생했습니다.' }, { status: 500 })
   }
 }
