@@ -43,12 +43,23 @@ export async function POST(req: NextRequest) {
     }
 
     // 친구 관계가 이미 있는지 확인
-    const { data: existingFriendData } = await supabase
+    const { data: existingFriendData, error: existingFriendError } = await supabase
       .from('friends')
       .select('status, member_id, friend_member_id')
-      .or(`member_id.eq.${userId},friend_member_id.eq.${friend_member_id}`)
-      .or(`member_id.eq.${friend_member_id},friend_member_id.eq.${userId}`)
+      .or(`member_id.eq.${userId},friend_member_id.eq.${userId}`)
+      .or(`member_id.eq.${friend_member_id},friend_member_id.eq.${friend_member_id}`)
       .single()
+
+    if (existingFriendError) {
+      return NextResponse.json(
+        {
+          status: existingFriendError.error || 500,
+          code: 'INTERNAL_SERVER_ERROR',
+          message: existingFriendError.message || '친구 신청 과정에서 오류가 발생했습니다.',
+        },
+        { status: existingFriendError.error || 500 },
+      )
+    }
 
     if (existingFriendData) {
       const { status, member_id, friend_member_id } = existingFriendData
@@ -90,7 +101,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // friend_member_id가 member table에 있는지 확인
+    // member table에서 friend_member_id로 정보 조회
     const { data: memberData, error: memberError } = await supabase
       .from('member')
       .select('id, nickname')
@@ -100,7 +111,7 @@ export async function POST(req: NextRequest) {
     if (memberError || !memberData) {
       return NextResponse.json(
         {
-          status: memberError?.status || 400,
+          status: memberError.status || 400,
           code: 'INVALID_FRIEND_MEMBER_ID',
           message: '유효하지 않은 친구 회원 ID입니다.',
         },
@@ -143,11 +154,11 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       {
-        status: error?.status || 500,
+        error: 500,
         code: 'INTERNAL_SERVER_ERROR',
-        message: error.message || '예상치 못한 오류가 발생했습니다.',
+        message: error,
       },
-      { status: error?.status || 500 },
+      { status: error.status || 500 },
     )
   }
 }
