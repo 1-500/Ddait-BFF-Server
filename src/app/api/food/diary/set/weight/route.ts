@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
         })
       } else {
         return NextResponse.json({
-          error: '데이터를 삽입 하였습니다.',
+          message: '데이터가 성공적으로 반영되었습니다!',
           status: 200,
         })
       }
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({
-      message: '데이터를 삽입 하였습니다!',
+      message: '데이터가 성공적으로 반영되었습니다!',
       status: 200,
     })
   } catch (error) {
