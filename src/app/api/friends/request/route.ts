@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           status: 401,
-          error: 'Unauthorized',
+          code: 'UNAUTHORIZED',
           message: '로그인된 사용자 ID가 필요합니다.',
         },
         { status: 401 },
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           status: 400,
-          error: 'Bad Request',
+          code: 'MISSING_FRIEND_MEMBER_ID',
           message: '친구 회원 ID가 필요합니다.',
         },
         { status: 400 },
@@ -35,15 +35,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           status: 400,
-          error: 'Bad Request',
+          code: 'CANNOT_ADD_SELF',
           message: '자신에게 친구 요청을 보낼 수 없습니다.',
         },
         { status: 400 },
       )
     }
 
-    // 친구 관계가 이미 있는지 확인 
-    const { data: existingFriendData, error: existingFriendError } = await supabase
+    // 친구 관계가 이미 있는지 확인
+    const { data: existingFriendData } = await supabase
       .from('friends')
       .select('status, member_id, friend_member_id')
       .or(`member_id.eq.${userId},friend_member_id.eq.${friend_member_id}`)
@@ -53,12 +53,11 @@ export async function POST(req: NextRequest) {
     if (existingFriendData) {
       const { status, member_id, friend_member_id } = existingFriendData
 
-      // 사용자가 친구 요청을 보낸 상태
       if (member_id === userId && status === '대기 중') {
         return NextResponse.json(
           {
             status: 400,
-            error: 'Bad Request',
+            code: 'FRIEND_REQUEST_PENDING',
             message: '이미 친구 요청을 보냈습니다. 승인을 기다려주세요.',
             friendStatus: status,
           },
@@ -66,12 +65,11 @@ export async function POST(req: NextRequest) {
         )
       }
 
-      // 상대방이 친구 요청을 보낸 상태
       if (friend_member_id === userId && status === '대기 중') {
         return NextResponse.json(
           {
             status: 400,
-            error: 'Bad Request',
+            code: 'FRIEND_REQUEST_RECEIVED',
             message: '상대방이 친구 요청을 보냈습니다. 친구 요청을 수락하세요.',
             friendStatus: status,
           },
@@ -79,12 +77,11 @@ export async function POST(req: NextRequest) {
         )
       }
 
-      // 이미 친구 상태
       if (status === '친구 승인') {
         return NextResponse.json(
           {
             status: 400,
-            error: 'Bad Request',
+            code: 'ALREADY_FRIENDS',
             message: '이미 친구 관계입니다.',
             friendStatus: status,
           },
@@ -104,7 +101,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           status: memberError?.status || 400,
-          error: 'Bad Request',
+          code: 'INVALID_FRIEND_MEMBER_ID',
           message: '유효하지 않은 친구 회원 ID입니다.',
         },
         { status: memberError?.status || 400 },
@@ -122,7 +119,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           status: insertError.status || 500,
-          error: 'Internal Server Error',
+          code: 'INSERT_ERROR',
           message: insertError.message,
         },
         { status: insertError.status || 500 },
@@ -137,7 +134,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         status: 201,
-        error: 'Success',
+        code: 'SUCCESS',
         message: '친구 신청이 완료되었습니다.',
         data: responseData,
       },
@@ -147,7 +144,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         status: error?.status || 500,
-        error: 'Internal Server Error',
+        code: 'INTERNAL_SERVER_ERROR',
         message: error.message || '예상치 못한 오류가 발생했습니다.',
       },
       { status: error?.status || 500 },
