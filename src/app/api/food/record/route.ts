@@ -49,9 +49,10 @@ export async function GET(req: NextRequest) {
       .eq('meal_time', mealTime)
 
     const foodRecordInfoList = []
+    console.log(foodRecordList)
     if (foodRecordList.data) {
       for (const food of foodRecordList.data) {
-        const result = await supabase.from('food_record_info').select('*').eq('id', food.food_record_id).single()
+        const result = await supabase.from('food_record_info').select('*').eq('id', food.food_record_info_id).single()
         if (result.error) {
           return NextResponse.json({
             error: result.error?.message,
@@ -60,7 +61,7 @@ export async function GET(req: NextRequest) {
         }
         foodRecordInfoList.push({
           id: result.data.id,
-          food_info_id: result.data.food_info_id,
+          food_record_info_id: result.data.food_info_id,
           carbs: result.data.carbs,
           protein: result.data.protein,
           fat: result.data.fat,
@@ -77,7 +78,7 @@ export async function GET(req: NextRequest) {
 
     let userFoodList = []
     for (const food of foodRecordInfoList) {
-      const result = await supabase.from('food_info_list').select('*').eq('id', food.food_info_id).single()
+      const result = await supabase.from('food_info_list').select('*').eq('id', food.food_record_info_id).single()
       if (result.error) {
         return NextResponse.json({
           error: result.error?.message,
@@ -94,7 +95,6 @@ export async function GET(req: NextRequest) {
         calories: food.calories,
       })
     }
-
     return NextResponse.json({
       data: userFoodList,
       message: '데이터를 정상적으로 조회하였습니다!',
