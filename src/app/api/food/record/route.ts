@@ -37,8 +37,8 @@ export async function GET(req: NextRequest) {
       food_diary_id = id
     } else {
       return NextResponse.json({
-        error: memberFoodDiary.error?.message,
-        status: memberFoodDiary.status,
+        data: [],
+        status: 200,
       })
     }
 
