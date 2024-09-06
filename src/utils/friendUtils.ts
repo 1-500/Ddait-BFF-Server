@@ -2,16 +2,17 @@ import { createClient } from '@/utils/supabase/client'
 
 export async function getFriendsWithDetails({ userId, status, type }) {
   const supabase = createClient()
-  
+
   // 조인 사용
   const query = supabase
     .from('friends')
     .select(
-      `status, 
+      `id,
+      status, 
       member_id, 
       friend_member_id, 
       member:member_id(id, introduce, profile_image, nickname, preferred_sport), 
-      friend:friend_member_id(id, introduce, profile_image, nickname, preferred_sport)`
+      friend:friend_member_id(id, introduce, profile_image, nickname, preferred_sport)`,
     )
     .eq('status', status)
 
@@ -39,8 +40,9 @@ export async function getFriendsWithDetails({ userId, status, type }) {
   }
 
   // 상대방의 정보만 필터링( memberId가 내 아이디면 friendId기준 조회해야 상대방 데이터임. 반대 경우도 동일)
-  const friendDetails = friendsData.map(friend => 
-    friend.member_id === userId ? friend.friend : friend.member
-  )
+  const friendDetails = friendsData.map((data) => ({
+    friendId: data.id, // friends 테이블의 id 추가
+    ...(data.member_id === userId ? data.friend : data.member),
+  }))
   return friendDetails
 }
