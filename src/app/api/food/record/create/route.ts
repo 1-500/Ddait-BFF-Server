@@ -29,7 +29,6 @@ export async function POST(req: NextRequest) {
       .gte('created_at', startOfDay)
       .lt('created_at', endOfDay)
       .single()
-
     if (foodDiarySearchError) {
       return NextResponse.json({
         error: foodDiarySearchError.message,
@@ -38,43 +37,43 @@ export async function POST(req: NextRequest) {
     }
     const dirayId = foodDiarySearchResult.id
 
-    // food_record_info에 먼저 아이템 생성
-    const insertedFoodIdList = []
-    for (const food of foodItems) {
-      const result = await supabase
-        .from('food_record_info')
-        .insert({
-          carbs: food.carbs,
-          protein: food.protein,
-          fat: food.fat,
-          serving_size: food.serving_size,
-          calories: food.calories,
-          food_info_id: food.id,
-        })
-        .select('id')
-      if (result.error) {
-        return NextResponse.json({
-          error: result.error.message,
-          status: result.error.code,
-        })
-      }
-      const insertedId = result.data[0].id
-      insertedFoodIdList.push(insertedId)
-    }
+    // // food_record_info에 먼저 아이템 생성
+    // const insertedFoodIdList = []
+    // for (const food of foodItems) {
+    //   const result = await supabase
+    //     .from('food_record_info')
+    //     .insert({
+    //       carbs: food.carbs,
+    //       protein: food.protein,
+    //       fat: food.fat,
+    //       serving_size: food.serving_size,
+    //       calories: food.calories,
+    //       food_info_id: food.id,
+    //     })
+    //     .select('id')
+    //   if (result.error) {
+    //     return NextResponse.json({
+    //       error: result.error.message,
+    //       status: result.error.code,
+    //     })
+    //   }
+    //   const insertedId = result.data[0].id
+    //   insertedFoodIdList.push(insertedId)
+    // }
 
-    for (let i = 0; i < insertedFoodIdList.length; i++) {
-      const foodRecordInsert = await supabase.from('food_record').insert({
-        food_diary_id: dirayId,
-        meal_time: meal_time,
-        food_record_info_id: insertedFoodIdList[i],
-      })
-      if (foodRecordInsert.error) {
-        return NextResponse.json({
-          error: foodRecordInsert.error,
-          status: foodRecordInsert.status,
-        })
-      }
-    }
+    // for (let i = 0; i < insertedFoodIdList.length; i++) {
+    //   const foodRecordInsert = await supabase.from('food_record').insert({
+    //     food_diary_id: dirayId,
+    //     meal_time: meal_time,
+    //     food_record_info_id: insertedFoodIdList[i],
+    //   })
+    //   if (foodRecordInsert.error) {
+    //     return NextResponse.json({
+    //       error: foodRecordInsert.error,
+    //       status: foodRecordInsert.status,
+    //     })
+    //   }
+    // }
 
     return NextResponse.json({
       message: '데이터를 삽입 하였습니다!',
