@@ -18,15 +18,15 @@ export async function GET(req: NextRequest) {
 
     const friendsData = await getFriendsWithDetails({
       userId,
-      status: '친구 승인',
-      type: 'friends',
+      status: '대기 중',
+      type: 'sent',
     })
 
     return NextResponse.json(
       {
         status: 200,
         code: 'SUCCESS',
-        message: '친구 목록 조회에 성공했습니다.',
+        message: '보낸 친구 요청 목록 조회에 성공했습니다.',
         data: friendsData,
       },
       { status: 200 }

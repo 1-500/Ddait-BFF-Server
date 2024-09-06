@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       .or(`member_id.eq.${friend_member_id},friend_member_id.eq.${friend_member_id}`)
       .single()
 
-    if (existingFriendError) {
+    if (existingFriendError && existingFriendError.code !== 'PGRST116') {
       return NextResponse.json(
         {
           status: existingFriendError.error || 500,
