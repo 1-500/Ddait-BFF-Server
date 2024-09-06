@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
         .eq('food_info_id', food.id)
         .single()
       if (bookMarkedFoodsSearchResult === null) {
-        if (food.isChecked) {
+        if (food.isBookMarked) {
           //음식이 체크되어있으면
           const result = await supabase.from('food_bookmark_list').insert({
             member_id: userId,
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
         }
       } else {
         // 북마크한 경우
-        if (!food.isChecked) {
+        if (!food.isBookMarked) {
           const result = await supabase.from('food_bookmark_list').delete().eq('id', bookMarkedFoodsSearchResult.id)
           if (result.error) {
             return NextResponse.json({

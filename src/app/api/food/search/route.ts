@@ -7,6 +7,7 @@ export async function GET(req: NextRequest) {
   const supabase = createClient(cookieStore)
   const { searchParams } = new URL(req.url)
   const term = searchParams.get('term')?.trim()
+  const userId = req.headers.get('X-User-Id')
 
   try {
     if (!term) {
@@ -25,12 +26,34 @@ export async function GET(req: NextRequest) {
     if (foodInfoListError) {
       return NextResponse.json({
         message: foodInfoListError.message,
-        status: foodInfoListError.code || 500, // 기본 에러 코드 설정
+        status: foodInfoListError.code || 500,
       })
     }
 
+    let newFoodInfoList = []
+    for (const food of foodInfoList) {
+      const result = await supabase
+        .from('food_bookmark_list')
+        .select('*')
+        .eq('member_id', userId)
+        .eq('food_info_id', food.id)
+        .single()
+      if (result.data !== null) {
+        // 북마크할 데이터가 있다면
+        newFoodInfoList.push({
+          ...food,
+          isBookMarked: true,
+        })
+      } else {
+        newFoodInfoList.push({
+          ...food,
+          isBookMarked: false,
+        })
+      }
+    }
+
     return NextResponse.json({
-      data: foodInfoList,
+      data: newFoodInfoList,
       message: '데이터를 정상적으로 조회하였습니다!',
       status: 200,
     })
