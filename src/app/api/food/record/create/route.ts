@@ -1,8 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
-import { getEndOfDay, getStartOfDay } from '@/utils/shared/date'
-import { error } from 'console'
+import { getCurrentKoreanTime } from '@/utils/shared/date'
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,38 +17,32 @@ export async function POST(req: NextRequest) {
         status: 400,
       })
     }
-    const startOfDay = getStartOfDay(date)
-    const endOfDay = getEndOfDay(date)
-    // 1. 해당 유저의 오늘 생성된 foodDiary를 찾는다.
-    const { data: foodDiarySearchResult, error: foodDiarySearchError } = await supabase
+    // 1. 해당 유저의  생성된 date에 맞는 foodDiary를 찾는다.
+    const { data: foodDirayResult } = await supabase
       .from('food_diary')
       .select('*')
       .eq('member_id', userId)
-      .gte('edited_at', startOfDay)
-      .lt('edited_at', endOfDay)
+      .eq('date', date)
       .single()
-    if (foodDiarySearchError) {
+
+    if (foodDirayResult === null) {
       return NextResponse.json({
-        error: foodDiarySearchError.message,
-        status: foodDiarySearchError.code,
+        message: '데이터가 존재하지 않습니다',
+        status: 200,
       })
     }
-    const food_diray_Id = foodDiarySearchResult.id
+    console.log(foodDirayResult, date)
+    const food_diray_Id = foodDirayResult.id
     // 해당 유저가 식사시간대에 기록한 food_record가 있는지 확인한다.
-    const { data: foodRecordSearchResult, error: foodRecordSearchResultError } = await supabase
+    const { data: foodRecordResult } = await supabase
       .from('food_record')
       .select('*')
       .eq('food_diary_id', food_diray_Id)
       .eq('meal_time', meal_time)
+      .single()
 
-    if (foodRecordSearchResultError) {
-      return NextResponse.json({
-        error: foodRecordSearchResultError.message,
-        status: foodRecordSearchResultError.code,
-      })
-    }
     // 없다면 food_record에 해당식사시간대 데이터 생성
-    if (!foodRecordSearchResult.length) {
+    if (foodRecordResult === null) {
       const { data: foodRecordInsertResult, error: foodRecordInsertResultError } = await supabase
         .from('food_record')
         .insert({
@@ -65,7 +58,6 @@ export async function POST(req: NextRequest) {
         })
       }
       const food_record_id = foodRecordInsertResult.id
-      // food_record_info에 음식 데이터 삽입
       for (const food of foodItems) {
         const result = await supabase
           .from('food_record_info')
@@ -88,7 +80,21 @@ export async function POST(req: NextRequest) {
       }
     } else {
       //이미 기록한게 존재한다면 데이터 추가삽입
-      const food_record_id = foodRecordSearchResult[0].id
+      const food_record_id = foodRecordResult[0].id
+      const { error: foodRecordUpdateError } = await supabase
+        .from('food_record')
+        .update({
+          edited_at: getCurrentKoreanTime(),
+        })
+        .eq('id', food_record_id)
+
+      if (foodRecordUpdateError) {
+        return NextResponse.json({
+          error: foodRecordUpdateError.message,
+          status: foodRecordUpdateError.code,
+        })
+      }
+
       for (const food of foodItems) {
         const result = await supabase
           .from('food_record_info')
