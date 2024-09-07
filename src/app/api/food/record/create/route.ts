@@ -31,7 +31,6 @@ export async function POST(req: NextRequest) {
         status: 200,
       })
     }
-    console.log(foodDirayResult, date)
     const food_diray_Id = foodDirayResult.id
     // 해당 유저가 식사시간대에 기록한 food_record가 있는지 확인한다.
     const { data: foodRecordResult } = await supabase
@@ -80,7 +79,7 @@ export async function POST(req: NextRequest) {
       }
     } else {
       //이미 기록한게 존재한다면 데이터 추가삽입
-      const food_record_id = foodRecordResult[0].id
+      const food_record_id = foodRecordResult.id
       const { error: foodRecordUpdateError } = await supabase
         .from('food_record')
         .update({
