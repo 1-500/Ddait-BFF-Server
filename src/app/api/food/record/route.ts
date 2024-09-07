@@ -1,7 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
-import { getEndOfDay, getStartOfDay } from '@/utils/shared/date'
 
 // 사용자가 보내준 날짜와 식사시간 기준으로 조회
 export async function GET(req: NextRequest) {
@@ -20,15 +19,12 @@ export async function GET(req: NextRequest) {
     }
 
     const userId = req.headers.get('X-User-Id')
-    const startOfDay = getStartOfDay(date)
-    const endOfDay = getEndOfDay(date)
 
     const memberFoodDiary = await supabase
       .from('food_diary')
       .select('*')
       .eq('member_id', userId)
-      .gte('created_at', startOfDay)
-      .lte('created_at', endOfDay)
+      .eq('date', date)
       .single()
 
     let food_diary_id
@@ -37,35 +33,36 @@ export async function GET(req: NextRequest) {
       food_diary_id = id
     } else {
       return NextResponse.json({
-        data: [],
+        data: '식단일지 데이터가 생성되지 않았습니다',
         status: 200,
       })
     }
 
-    const { data: foodRecordResult, error: foodRecordError } = await supabase
+    const { data: foodRecordResult } = await supabase
       .from('food_record')
       .select('*')
       .eq('food_diary_id', food_diary_id)
       .eq('meal_time', mealTime)
       .single()
 
-    const food_record_id = foodRecordResult.id
-
-    if (foodRecordError) {
+    if (foodRecordResult === null) {
       return NextResponse.json({
-        error: foodRecordError.message,
-        status: foodRecordError.code,
+        data: [],
+        message: '데이터가 존재하지 않습니다',
+        status: 200,
       })
     }
-    const { data: foodRecordInfoResult, error: foodRecordInfoError } = await supabase
+
+    const food_record_id = foodRecordResult.id
+    const { data: foodRecordInfoResult } = await supabase
       .from('food_record_info')
       .select('*')
       .eq('food_record_id', food_record_id)
 
     if (foodRecordInfoResult === null) {
       return NextResponse.json({
-        error: '데이터 조회를 실패하였습니다',
-        status: 400,
+        message: '데이터가 존재하지 않습니다',
+        status: 200,
       })
     }
     const userFoodList = []
