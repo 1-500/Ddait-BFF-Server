@@ -37,56 +37,54 @@ export async function GET(req: NextRequest) {
       food_diary_id = id
     } else {
       return NextResponse.json({
-        error: memberFoodDiary.error?.message,
-        status: memberFoodDiary.status,
+        data: [],
+        status: 200,
       })
     }
 
-    const foodRecordList = await supabase
+    const { data: foodRecordResult, error: foodRecordError } = await supabase
       .from('food_record')
       .select('*')
       .eq('food_diary_id', food_diary_id)
       .eq('meal_time', mealTime)
+      .single()
 
-    const foodRecordInfoList = []
-    if (foodRecordList.data) {
-      for (const food of foodRecordList.data) {
-        const result = await supabase.from('food_record_info').select('*').eq('id', food.food_record_id).single()
-        if (result.error) {
-          return NextResponse.json({
-            error: result.error?.message,
-            status: result.status,
-          })
-        }
-        foodRecordInfoList.push({
-          id: result.data.id,
-          food_info_id: result.data.food_info_id,
-          carbs: result.data.carbs,
-          protein: result.data.protein,
-          fat: result.data.fat,
-          serving_size: result.data.serving_size,
-          calories: result.data.calories,
-        })
-      }
-    } else {
+    const food_record_id = foodRecordResult.id
+
+    if (foodRecordError) {
       return NextResponse.json({
-        error: foodRecordList.error?.message,
-        status: foodRecordList.status,
+        error: foodRecordError.message,
+        status: foodRecordError.code,
       })
     }
+    const { data: foodRecordInfoResult, error: foodRecordInfoError } = await supabase
+      .from('food_record_info')
+      .select('*')
+      .eq('food_record_id', food_record_id)
 
-    let userFoodList = []
-    for (const food of foodRecordInfoList) {
-      const result = await supabase.from('food_info_list').select('*').eq('id', food.food_info_id).single()
-      if (result.error) {
+    if (foodRecordInfoResult === null) {
+      return NextResponse.json({
+        error: '데이터 조회를 실패하였습니다',
+        status: 400,
+      })
+    }
+    const userFoodList = []
+    for (const food of foodRecordInfoResult) {
+      const { data: foodInfoResult, error: foodInfoResultError } = await supabase
+        .from('food_info')
+        .select('*')
+        .eq('id', food.food_info_id)
+        .single()
+
+      if (foodInfoResultError) {
         return NextResponse.json({
-          error: result.error?.message,
-          status: result.status,
+          error: foodInfoResultError.message,
+          status: foodInfoResultError.code,
         })
       }
       userFoodList.push({
         id: food.id,
-        name: result.data.name,
+        name: foodInfoResult.name,
         carbs: food.carbs,
         protein: food.protein,
         fat: food.fat,
