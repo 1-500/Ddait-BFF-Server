@@ -1,7 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
-import { getEndOfDay, getStartOfDay } from '@/utils/shared/date'
+import { getCurrentKoreanTime } from '@/utils/shared/date'
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,15 +20,11 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    const startOfDay = getStartOfDay(date)
-    const endOfDay = getEndOfDay(date)
-
     const { data: foodDiarySearchResult, error: foodDiarySearchError } = await supabase
       .from('food_diary')
       .select('*')
       .eq('member_id', userId)
-      .gte('edited_at', startOfDay)
-      .lt('edited_at', endOfDay)
+      .eq('date', date)
       .single()
 
     if (foodDiarySearchError) {
@@ -67,10 +63,10 @@ export async function POST(req: NextRequest) {
           fat_ratio: fatRatio,
           total_calories: total_calories,
           current_weight: userWeight,
+          edited_at: getCurrentKoreanTime(),
         })
         .eq('member_id', userId)
-        .gte('edited_at', startOfDay)
-        .lt('edited_at', endOfDay)
+        .eq('date', date)
     }
 
     return NextResponse.json({
