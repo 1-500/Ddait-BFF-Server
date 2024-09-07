@@ -8,14 +8,32 @@ export async function POST(req: NextRequest) {
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
     const userId = req.headers.get('X-User-Id')
-    const { foodItems, date } = await req.json()
+    const { food } = await req.json()
 
-    console.log(foodItems)
-
-    return NextResponse.json({
-      message: '식단 일지에 기록 하였습니다!',
-      status: 200,
-    })
+    const { data: insertResult } = await supabase
+      .from('food_info')
+      .insert({
+        name: food.name,
+        carbs: food.carbs,
+        calories: food.calories,
+        protein: food.protein,
+        fat: food.fat,
+        serving_size: food.serving_size,
+        created_user: userId,
+      })
+      .select('*')
+      .single()
+    if (insertResult) {
+      return NextResponse.json({
+        message: '나만의 음식을 생성 하였습니다!',
+        status: 200,
+      })
+    } else {
+      return NextResponse.json({
+        message: '나만의 음식을 생성 하지 못했습니다!',
+        status: 400,
+      })
+    }
   } catch (error) {
     return NextResponse.json({ error: error })
   }
