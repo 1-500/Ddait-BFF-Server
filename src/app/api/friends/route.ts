@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
     const friendsData = await getFriendsWithDetails({
       userId,
-      status: '친구 승인',
+      status: '승인',
       type: 'friends',
     })
 

@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     if (existingFriendData) {
       const { status, member_id, friend_member_id } = existingFriendData
 
-      if (member_id === userId && status === '대기 중') {
+      if (member_id === userId && status === '대기') {
         return NextResponse.json(
           {
             status: 400,
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
         )
       }
 
-      if (friend_member_id === userId && status === '대기 중') {
+      if (friend_member_id === userId && status === '대기') {
         return NextResponse.json(
           {
             status: 400,
@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
     // 친구 신청 추가
     const { data: friendRequest, error: insertError } = await supabase
       .from('friends')
-      .insert([{ member_id: userId, friend_member_id, status: '대기 중' }])
+      .insert([{ member_id: userId, friend_member_id, status: '대기' }])
       .select()
       .single()
 
