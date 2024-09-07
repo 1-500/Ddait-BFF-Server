@@ -23,8 +23,10 @@ export async function POST(req: NextRequest) {
     const { data: foodDiarySearchResult, error: foodDiarySearchError } = await supabase
       .from('food_diary')
       .select('*')
-      .gte('created_at', startOfDay)
-      .lt('created_at', endOfDay)
+      .eq('member_id', userId)
+      .gte('edited_at', startOfDay)
+      .lt('edited_at', endOfDay)
+      .single()
 
     if (foodDiarySearchError) {
       return NextResponse.json({
@@ -33,7 +35,7 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    if (!foodDiarySearchResult?.length) {
+    if (!foodDiarySearchResult) {
       const foodDiaryInsertResult = await supabase.from('food_diary').insert({
         member_id: userId,
         current_weight: userWeight,
@@ -56,8 +58,9 @@ export async function POST(req: NextRequest) {
           member_id: userId,
           current_weight: userWeight,
         })
-        .gte('created_at', startOfDay)
-        .lt('created_at', endOfDay)
+        .eq('member_id', userId)
+        .gte('edited_at', startOfDay)
+        .lt('edited_at', endOfDay)
     }
 
     return NextResponse.json({
