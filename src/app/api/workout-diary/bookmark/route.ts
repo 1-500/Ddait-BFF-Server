@@ -6,38 +6,29 @@ export async function POST(req: NextRequest) {
   try {
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
-    const userId = req.headers.get('X-User-Id') // 유저 ID를 헤더에서 가져옴
+    const userId = req.headers.get('X-User-Id')
 
-    const { bookMarkedWorkouts } = await req.json() // 클라이언트에서 받은 북마크한 운동 목록 (name 기반)
+    const { bookMarkedWorkouts } = await req.json()
 
     for (const workout of bookMarkedWorkouts) {
-      // 운동 종목 이름을 기반으로 workout_info 테이블에서 UUID 조회
-      const { data: workoutInfo, error: workoutInfoError } = await supabase
-        .from('workout_info')
-        .select('id')
-        .eq('name', workout.name)
-        .single()
+      const workoutInfoId = workout.id
 
-      if (workoutInfoError || !workoutInfo) {
-        // 운동 종목을 찾지 못하면 에러 반환
-        return NextResponse.json({
-          message: '해당 이름의 운동 종목을 찾을 수 없습니다.',
-          status: 404,
-        })
-      }
-
-      const workoutInfoId = workoutInfo.id // 찾은 workout_info_id
-
-      // 2. 운동 북마크 검색
       const { data: bookMarkedWorkoutsSearchResult, error: bookMarkedWorkoutsSearchError } = await supabase
         .from('workout_bookmark_list')
         .select('*')
         .eq('member_id', userId)
         .eq('workout_info_id', workoutInfoId)
-        .single()
+        .maybeSingle()
+
+      if (bookMarkedWorkoutsSearchError) {
+        console.error('북마크 검색 중 오류 발생:', bookMarkedWorkoutsSearchError)
+        return NextResponse.json({
+          message: bookMarkedWorkoutsSearchError.message,
+          status: 500,
+        })
+      }
 
       if (bookMarkedWorkoutsSearchResult === null) {
-        // 3. 북마크가 없는 경우, 추가 처리
         if (workout.isBookMarked) {
           const result = await supabase.from('workout_bookmark_list').insert({
             member_id: userId,
@@ -51,7 +42,6 @@ export async function POST(req: NextRequest) {
           }
         }
       } else {
-        // 4. 북마크가 있는 경우, 삭제 처리
         if (!workout.isBookMarked) {
           const result = await supabase
             .from('workout_bookmark_list')
@@ -72,6 +62,39 @@ export async function POST(req: NextRequest) {
       status: 200,
     })
   } catch (error) {
+    console.error('서버 오류:', error)
     return NextResponse.json({ error: error.message, status: 500 })
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
+    const userId = req.headers.get('X-User-Id')
+
+    if (!userId) {
+      return NextResponse.json({ message: '유저 정보를 찾을 수 없습니다.', status: 401 })
+    }
+
+    const { data: bookmarkList, error } = await supabase
+      .from('workout_bookmark_list')
+      .select('workout_info_id')
+      .eq('member_id', userId)
+
+    if (error) {
+      return NextResponse.json({
+        message: `북마크된 운동 목록을 불러오는 중 오류가 발생했습니다: ${error.message}`,
+        status: error.code,
+      })
+    }
+
+    return NextResponse.json({
+      message: '북마크된 운동 목록을 성공적으로 불러왔습니다.',
+      data: bookmarkList,
+      status: 200,
+    })
+  } catch (error) {
+    return NextResponse.json({ message: '서버 에러가 발생했습니다.', status: 500 })
   }
 }
