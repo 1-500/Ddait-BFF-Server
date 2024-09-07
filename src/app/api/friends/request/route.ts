@@ -46,11 +46,12 @@ export async function POST(req: NextRequest) {
     const { data: existingFriendData, error: existingFriendError } = await supabase
       .from('friends')
       .select('status, member_id, friend_member_id')
-      .or(`member_id.eq.${userId},friend_member_id.eq.${userId}`)
-      .or(`member_id.eq.${friend_member_id},friend_member_id.eq.${friend_member_id}`)
-      .single()
+      .or(
+        `and(member_id.eq.${userId},friend_member_id.eq.${friend_member_id}),and(member_id.eq.${friend_member_id},friend_member_id.eq.${userId})`,
+      )
+      .maybeSingle()
 
-    if (existingFriendError && existingFriendError.code !== 'PGRST116') {
+    if (existingFriendError) {
       return NextResponse.json(
         {
           status: existingFriendError.error || 500,
