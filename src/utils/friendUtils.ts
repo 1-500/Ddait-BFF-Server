@@ -41,7 +41,7 @@ export async function getFriendsWithDetails({ userId, status, type }) {
 
   // 상대방의 정보만 필터링( memberId가 내 아이디면 friendId기준 조회해야 상대방 데이터임. 반대 경우도 동일)
   const friendDetails = friendsData.map((data) => ({
-    friendId: data.id, // friends 테이블의 id 추가
+    table_id: data.id,
     ...(data.member_id === userId ? data.friend : data.member),
   }))
   return friendDetails
