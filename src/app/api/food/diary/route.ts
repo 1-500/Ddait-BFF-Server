@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     if (!foodDiaryResult) {
       return NextResponse.json({
         message: '데이터가 존재하지 않습니다!',
-        status: 200,
+        status: 400,
       })
     } else {
       userInfo = {
