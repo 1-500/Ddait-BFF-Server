@@ -21,14 +21,14 @@ export async function POST(req: NextRequest) {
     const userId = result.data.id
     const nickname = result.data.nickname
     const profileImageUrl = result.data.profile_image
-    const bio = result.data.bio
+    const introduce = result.data.introduce
 
     return NextResponse.json({
       session: data.session,
       userId: userId,
       nickname: nickname,
       profileImageUrl: profileImageUrl,
-      bio: bio,
+      introduce: introduce,
       status: 200,
     })
   } catch (error) {
