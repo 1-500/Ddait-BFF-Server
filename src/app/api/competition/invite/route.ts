@@ -32,24 +32,19 @@ export async function POST(req: NextRequest) {
     }
 
     if (competitionRecord.data.length < competitionRoom.data.max_members) {
-      if (competitionRoom.data.max_members === 2 && competitionRoom.data.host_id !== userId) {
-        return NextResponse.json({ message: '1:1 경쟁방은 방장이 아니면 초대가 불가능합니다.' }, { status: 400 })
-      } else {
-        // 1:1 경쟁방이면서 방장이거나, 랭킹전 경쟁방인 경우
-        const res = await supabase.from('competition_invite').insert([
-          {
-            competition_room_id,
-            sender_id: userId,
-            recipient_id,
-          },
-        ])
-        if (res.error) {
-          console.error('Supabase Insert into competition_invite Error:', res.error)
-          return NextResponse.json({ message: res.error.message }, { status: res.status })
-        }
-
-        return NextResponse.json({ data: res }, { status: 201 })
+      const res = await supabase.from('competition_invite').insert([
+        {
+          competition_room_id,
+          sender_id: userId,
+          recipient_id,
+        },
+      ])
+      if (res.error) {
+        console.error('Supabase Insert into competition_invite Error:', res.error)
+        return NextResponse.json({ message: res.error.message }, { status: res.status })
       }
+
+      return NextResponse.json({ data: res }, { status: 201 })
     } else {
       return NextResponse.json({ message: '인원이 가득차 초대가 불가능합니다.' }, { status: 400 })
     }
