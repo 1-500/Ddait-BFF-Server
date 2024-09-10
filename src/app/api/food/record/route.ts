@@ -1,7 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
-import { getEndOfDay, getStartOfDay } from '@/utils/shared/date'
 
 // 사용자가 보내준 날짜와 식사시간 기준으로 조회
 export async function GET(req: NextRequest) {
@@ -20,15 +19,12 @@ export async function GET(req: NextRequest) {
     }
 
     const userId = req.headers.get('X-User-Id')
-    const startOfDay = getStartOfDay(date)
-    const endOfDay = getEndOfDay(date)
 
     const memberFoodDiary = await supabase
       .from('food_diary')
       .select('*')
       .eq('member_id', userId)
-      .gte('created_at', startOfDay)
-      .lte('created_at', endOfDay)
+      .eq('date', date)
       .single()
 
     let food_diary_id
@@ -37,56 +33,55 @@ export async function GET(req: NextRequest) {
       food_diary_id = id
     } else {
       return NextResponse.json({
-        error: memberFoodDiary.error?.message,
-        status: memberFoodDiary.status,
+        data: '식단일지 데이터가 생성되지 않았습니다',
+        status: 200,
       })
     }
 
-    const foodRecordList = await supabase
+    const { data: foodRecordResult } = await supabase
       .from('food_record')
       .select('*')
       .eq('food_diary_id', food_diary_id)
       .eq('meal_time', mealTime)
+      .single()
 
-    const foodRecordInfoList = []
-    if (foodRecordList.data) {
-      for (const food of foodRecordList.data) {
-        const result = await supabase.from('food_record_info').select('*').eq('id', food.food_record_id).single()
-        if (result.error) {
-          return NextResponse.json({
-            error: result.error?.message,
-            status: result.status,
-          })
-        }
-        foodRecordInfoList.push({
-          id: result.data.id,
-          food_info_id: result.data.food_info_id,
-          carbs: result.data.carbs,
-          protein: result.data.protein,
-          fat: result.data.fat,
-          serving_size: result.data.serving_size,
-          calories: result.data.calories,
-        })
-      }
-    } else {
+    if (foodRecordResult === null) {
       return NextResponse.json({
-        error: foodRecordList.error?.message,
-        status: foodRecordList.status,
+        data: [],
+        message: '데이터가 존재하지 않습니다',
+        status: 200,
       })
     }
 
-    let userFoodList = []
-    for (const food of foodRecordInfoList) {
-      const result = await supabase.from('food_info_list').select('*').eq('id', food.food_info_id).single()
-      if (result.error) {
+    const food_record_id = foodRecordResult.id
+    const { data: foodRecordInfoResult } = await supabase
+      .from('food_record_info')
+      .select('*')
+      .eq('food_record_id', food_record_id)
+
+    if (foodRecordInfoResult === null) {
+      return NextResponse.json({
+        message: '데이터가 존재하지 않습니다',
+        status: 200,
+      })
+    }
+    const userFoodList = []
+    for (const food of foodRecordInfoResult) {
+      const { data: foodInfoResult, error: foodInfoResultError } = await supabase
+        .from('food_info')
+        .select('*')
+        .eq('id', food.food_info_id)
+        .single()
+
+      if (foodInfoResultError) {
         return NextResponse.json({
-          error: result.error?.message,
-          status: result.status,
+          error: foodInfoResultError.message,
+          status: foodInfoResultError.code,
         })
       }
       userFoodList.push({
         id: food.id,
-        name: result.data.name,
+        name: foodInfoResult.name,
         carbs: food.carbs,
         protein: food.protein,
         fat: food.fat,

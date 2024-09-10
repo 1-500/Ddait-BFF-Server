@@ -1,7 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
-import { getEndOfDay, getStartOfDay } from '@/utils/shared/date'
+import { getCurrentKoreanTime } from '@/utils/shared/date'
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,10 +19,23 @@ export async function POST(req: NextRequest) {
         status: 400,
       })
     }
-    const memberResult = await supabase.from('food_diary').select('*').eq('member_id', userId)
 
-    if (!memberResult.data?.length) {
-      const foodDiaryResult = await supabase.from('food_diary').insert({
+    const { data: foodDiarySearchResult, error: foodDiarySearchError } = await supabase
+      .from('food_diary')
+      .select('*')
+      .eq('member_id', userId)
+      .eq('date', date)
+      .single()
+
+    if (foodDiarySearchError) {
+      return NextResponse.json({
+        error: foodDiarySearchError.message,
+        status: foodDiarySearchError.code,
+      })
+    }
+
+    if (!foodDiarySearchResult) {
+      const foodDiaryInsertResult = await supabase.from('food_diary').insert({
         carb_ratio: carbRatio,
         protein_ratio: proteinRatio,
         fat_ratio: fatRatio,
@@ -30,16 +43,18 @@ export async function POST(req: NextRequest) {
         member_id: userId,
         current_weight: userWeight,
       })
-      if (foodDiaryResult.error) {
+      if (foodDiaryInsertResult.error) {
         return NextResponse.json({
-          error: foodDiaryResult.error.message,
-          status: foodDiaryResult.status,
+          error: foodDiaryInsertResult.error.message,
+          status: foodDiaryInsertResult.status,
+        })
+      } else {
+        return NextResponse.json({
+          message: '데이터가 성공적으로 반영되었습니다!',
+          status: 200,
         })
       }
     } else {
-      const startOfDay = getStartOfDay(date)
-      const endOfDay = getEndOfDay(date)
-
       await supabase
         .from('food_diary')
         .update({
@@ -47,14 +62,15 @@ export async function POST(req: NextRequest) {
           protein_ratio: proteinRatio,
           fat_ratio: fatRatio,
           total_calories: total_calories,
-          member_id: userId,
           current_weight: userWeight,
+          edited_at: getCurrentKoreanTime(),
         })
-        .gte('created_at', startOfDay)
-        .lt('created_at', endOfDay)
+        .eq('member_id', userId)
+        .eq('date', date)
     }
+
     return NextResponse.json({
-      message: '데이터를 삽입 하였습니다!',
+      message: '데이터가 성공적으로 반영되었습니다!',
       status: 200,
     })
   } catch (error) {
