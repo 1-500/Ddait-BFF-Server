@@ -19,10 +19,16 @@ export async function POST(req: NextRequest) {
     }
     const result = await supabase.from('member').select('*').eq('email', email).single()
     const userId = result.data.id
+    const nickname = result.data.nickname
+    const profileImageUrl = result.data.profile_image
+    const introduce = result.data.introduce
 
     return NextResponse.json({
       session: data.session,
       userId: userId,
+      nickname: nickname,
+      profileImageUrl: profileImageUrl,
+      introduce: introduce,
       status: 200,
     })
   } catch (error) {
