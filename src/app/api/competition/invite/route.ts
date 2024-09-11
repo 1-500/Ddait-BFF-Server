@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (competitionRecord.data.length < competitionRoom.data.max_members) {
-      if (!competitionRecord.data.some((record) => record.member_id === userId)) {
+      if (!competitionRecord.data.some((record) => record.member_id === recipient_id)) {
         const res = await supabase.from('competition_invite').insert([
           {
             competition_room_id,
