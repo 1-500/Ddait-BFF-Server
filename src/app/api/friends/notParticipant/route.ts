@@ -8,17 +8,6 @@ export async function GET(req: NextRequest) {
 
     const userId = req.headers.get('X-User-Id')
 
-    if (!userId) {
-      return NextResponse.json(
-        {
-          status: 400,
-          code: 'MISSING_USER_ID',
-          message: '사용자 ID가 필요합니다.',
-        },
-        { status: 400 },
-      )
-    }
-
     if (!roomId) {
       return NextResponse.json(
         {
