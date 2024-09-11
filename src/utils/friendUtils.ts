@@ -25,6 +25,7 @@ export async function getFriendsWithDetails({ userId, status, type, roomId = '' 
       query.or(`member_id.eq.${userId}`)
       break
     case 'friends':
+    case 'not_participant':
       query.or(`member_id.eq.${userId},friend_member_id.eq.${userId}`)
       break
   }
