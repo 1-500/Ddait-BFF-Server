@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/client'
 
-export async function getFriendsWithDetails({ userId, status, type }) {
+export async function getFriendsWithDetails({ userId, status, type, roomId = '' }) {
   const supabase = createClient()
 
   // 조인 사용
@@ -25,6 +25,7 @@ export async function getFriendsWithDetails({ userId, status, type }) {
       query.or(`member_id.eq.${userId}`)
       break
     case 'friends':
+    case 'not_participant':
       query.or(`member_id.eq.${userId},friend_member_id.eq.${userId}`)
       break
   }
@@ -44,5 +45,23 @@ export async function getFriendsWithDetails({ userId, status, type }) {
     table_id: data.id,
     ...(data.member_id === userId ? data.friend : data.member),
   }))
+
+  if (type === 'not_participant') {
+    const { data: competitionRecordData, error: competitionRecordError } = await supabase
+      .from('competition_record')
+      .select('member_id')
+      .eq('competition_room_id', roomId)
+
+    if (competitionRecordError) {
+      throw {
+        status: competitionRecordError.status || 500,
+        code: 'COMPETITION_RECORD_SELECT_ERROR',
+        message: competitionRecordError.message || '경쟁 기록 데이터를 가져오는데 실패했습니다.',
+      }
+    }
+    return friendDetails.filter(
+      (record) => !competitionRecordData.map((record) => record.member_id).includes(record.id),
+    )
+  }
   return friendDetails
 }
