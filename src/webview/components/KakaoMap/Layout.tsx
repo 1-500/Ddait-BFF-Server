@@ -42,8 +42,8 @@ const MyPositionPageLayout = () => {
             <MapMarker
               position={center}
               image={{
-                src: '/assets/myPostion.png',
-                size: { width: 70, height: 70 },
+                src: '/assets/green_marker_on.svg',
+                size: { width: 40, height: 40 },
               }}
               title="내 위치"
             />
