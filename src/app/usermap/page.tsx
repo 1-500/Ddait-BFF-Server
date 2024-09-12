@@ -21,7 +21,7 @@ const fetchAllUserLocations = async () => {
   }
 }
 
-const MyPositionPageLayout = () => {
+const UserMap = () => {
   const { position } = useGeolocation()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -106,4 +106,4 @@ const MyPositionPageLayout = () => {
   )
 }
 
-export default MyPositionPageLayout
+export default UserMap
