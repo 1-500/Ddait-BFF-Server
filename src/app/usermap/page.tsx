@@ -14,7 +14,6 @@ const fetchAllUserLocations = async () => {
       throw new Error(errorData.message)
     }
     const data = await response.json()
-    console.log('response:', data)
     return data.data
   } catch (error) {
     console.error('Error fetching user locations:', error)
@@ -28,6 +27,7 @@ const MyPositionPageLayout = () => {
   const [error, setError] = useState(null)
   const [center, setCenter] = useState({ lat: 0, lng: 0 })
   const [userLocations, setUserLocations] = useState([])
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
 
   const [kakaoLoading, kakaoError] = useKakaoLoader({
     appkey: `${process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY}`,
@@ -81,16 +81,21 @@ const MyPositionPageLayout = () => {
           <MapMarker
             position={center}
             image={{
-              src: '/assets/myPostion.png',
-              size: { width: 70, height: 70 },
+              src: '/assets/green_marker_on.svg',
+              size: { width: 40, height: 40 },
             }}
             title="내 위치"
           />
-          {userLocations.map((user, index) => (
+          {userLocations.map((user) => (
             <MapMarker
-              key={index}
+              key={user.id}
               position={{ lat: user.location.latitude, lng: user.location.longitude }}
+              image={{
+                src: selectedUserId === user.id ? '/assets/blue_marker_on.svg' : '/assets/blue_marker.svg',
+                size: { width: 30, height: 30 },
+              }}
               title={user.nickname}
+              onClick={() => setSelectedUserId(user.id)}
             />
           ))}
         </Map>
