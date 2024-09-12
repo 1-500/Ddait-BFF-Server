@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
 
     const { data: membersData, error: membersError } = await supabase
       .from('member')
-      .select('nickname, location')
+      .select('id, location, preferred_sport')
 
     if (membersError) {
       return NextResponse.json(
@@ -31,17 +31,18 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // location 값이 있는 유저들만
+    // location 값이 있는 유저들만 필터링하고, 각 유저의 정보를 변환합니다.
     const membersWithLocation = membersData
-      .filter(member => member.location)
-      .map(member => {
+      .filter((member) => member.location)
+      .map((member) => {
         const [latitude, longitude] = member.location.split(',').map(Number)
         return {
-          nickname: member.nickname,
+          id: member.id,
           location: {
             latitude,
             longitude,
           },
+          preferredSport: member.preferred_sport, // 필드명을 preferredSport로 변환
         }
       })
 
