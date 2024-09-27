@@ -115,3 +115,23 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ message: error }, { status: 400 })
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const searchParams = req.nextUrl.searchParams
+    const notificationId = searchParams.get('notificationId')
+
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
+
+    const res = await supabase.from('notification').delete().eq('id', notificationId).select('*')
+    if (res.error) {
+      return NextResponse.json({ message: error }, { status: 400 })
+    }
+
+    return NextResponse.json({ data: res.data }, { status: 200 })
+  } catch (error) {
+    console.log(error)
+    return NextResponse.json({ message: error }, { status: 400 })
+  }
+}
