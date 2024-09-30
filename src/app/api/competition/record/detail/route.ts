@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
       .from('workout_diary')
       .select(
         `
-          id, created_at,
+          id, created_at, title,
           workout_record(
             set, weight, reps,
             workout_info(name)
@@ -95,6 +95,7 @@ export async function GET(req: NextRequest) {
 
         if (filteredRecord.length > 0) {
           scoreDetail.diary.push({
+            title: diaryElement.title,
             created_at: new Date(diaryElement.created_at),
             record: filteredRecord,
           })
