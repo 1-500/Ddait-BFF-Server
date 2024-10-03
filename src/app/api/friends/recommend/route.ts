@@ -4,6 +4,9 @@ import { createClient } from '@/utils/supabase/client'
 export async function GET(req: NextRequest) {
   try {
     const userId = req.headers.get('X-User-Id')
+    const page = Number(req.nextUrl.searchParams.get('page'))
+    const size = Number(req.nextUrl.searchParams.get('size'))
+
     if (!userId) {
       return NextResponse.json(
         {
@@ -17,7 +20,6 @@ export async function GET(req: NextRequest) {
 
     const supabase = createClient()
 
-    // 사용자의 선호 운동 정보를 가져옵니다.
     const { data: userPreferenceData, error: preferenceError } = await supabase
       .from('member')
       .select('preferred_sport')
@@ -37,11 +39,12 @@ export async function GET(req: NextRequest) {
 
     const preferredSport = userPreferenceData.preferred_sport
 
-    // 전체 사용자 중에서 선호 운동이 같은 유저만 필터링
+    // 페이지네이션
     const { data: matchingUsers, error: usersError } = await supabase
       .from('member')
-      .select('*') // 전체 유저 데이터를 가져옵니다.
-      .eq('preferred_sport', preferredSport) // 선호 운동이 같은 유저만 필터링
+      .select('*')
+      .eq('preferred_sport', preferredSport)
+      .range((page - 1) * size, page * size - 1) // 범위 설정
 
     if (usersError) {
       return NextResponse.json(
@@ -53,17 +56,18 @@ export async function GET(req: NextRequest) {
         { status: 400 },
       )
     }
-
     return NextResponse.json(
       {
         status: 200,
         code: 'SUCCESS',
         message: '선호 운동이 같은 사용자 목록 조회에 성공했습니다.',
         data: matchingUsers,
+        page,
+        size,
       },
       { status: 200 },
     )
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json(
       {
         status: error.status || 500,
