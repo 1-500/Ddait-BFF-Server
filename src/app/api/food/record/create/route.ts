@@ -94,10 +94,35 @@ export async function POST(req: NextRequest) {
         })
       }
 
+      const { data: foodRecordInfoResult, error: foodRecordInfoError } = await supabase
+        .from('food_record_info')
+        .select('*')
+        .eq('food_record_id', food_record_id)
+
+      if (foodRecordInfoError) {
+        return NextResponse.json({
+          error: foodRecordInfoError.message,
+          status: foodRecordInfoError.code,
+        })
+      }
+
+      for (const food of foodRecordInfoResult) {
+        const foundItem = foodItems.find((item) => item.id === food.id)
+        if (!foundItem) {
+          const { error } = await supabase.from('food_record_info').delete().eq('id', food.id)
+          if (error) {
+            return NextResponse.json({
+              message: error.message,
+              status: error.code,
+            })
+          }
+        }
+      }
+
       for (const food of foodItems) {
-        const result = await supabase
-          .from('food_record_info')
-          .insert({
+        const foundItem = foodRecordInfoResult.find((item) => item.id === food.id)
+        if (!foundItem) {
+          const { error } = await supabase.from('food_record_info').insert({
             carbs: food.carbs,
             protein: food.protein,
             fat: food.fat,
@@ -106,19 +131,19 @@ export async function POST(req: NextRequest) {
             food_info_id: food.id,
             food_record_id: food_record_id,
           })
-          .select('id')
-        if (result.error) {
-          return NextResponse.json({
-            error: result.error.message,
-            status: result.error.code,
-          })
+          if (error) {
+            return NextResponse.json({
+              message: error.message,
+              status: error.code,
+            })
+          }
         }
       }
+      return NextResponse.json({
+        message: '식단 일지에 기록 하였습니다!',
+        status: 200,
+      })
     }
-    return NextResponse.json({
-      message: '식단 일지에 기록 하였습니다!',
-      status: 200,
-    })
   } catch (error) {
     return NextResponse.json({ error: error })
   }
