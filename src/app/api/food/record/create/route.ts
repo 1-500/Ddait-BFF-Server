@@ -140,6 +140,7 @@ export async function POST(req: NextRequest) {
         }
       }
       return NextResponse.json({
+        food_record_id,
         message: '식단 일지에 기록 하였습니다!',
         status: 200,
       })
