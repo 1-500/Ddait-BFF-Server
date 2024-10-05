@@ -6,8 +6,27 @@ export async function GET(req: NextRequest) {
   try {
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
-  } catch (error) {
-    console.log(error)
-    return NextResponse.json({ error: error })
+    const { searchParams } = new URL(req.url)
+    const id = searchParams.get('id')
+
+    const { data: food_record_images, error } = await supabase
+      .from('food_record_images')
+      .select()
+      .eq('food_record_id', id)
+
+    if (error) {
+      return NextResponse.json({ status: error.code, message: error.message })
+    }
+    const foodRecordImageList = []
+    for (const image of food_record_images) {
+      const { data } = supabase.storage.from('food_record_images').getPublicUrl(image.file_url)
+      foodRecordImageList.push(data.publicUrl)
+    }
+    if (!foodRecordImageList.length) {
+      throw new Error('가져올 이미지가 존재하지 않습니다!')
+    }
+    return NextResponse.json({ status: 200, data: foodRecordImageList, message: '이미지 불러오기 성공!' })
+  } catch (error: any) {
+    return NextResponse.json({ status: 400, message: error.message })
   }
 }
