@@ -23,9 +23,10 @@ export async function GET(req: NextRequest) {
       foodRecordImageList.push(data.publicUrl)
     }
     if (!foodRecordImageList.length) {
-      throw new Error('가져올 이미지가 존재하지 않습니다!')
+      return NextResponse.json({ status: 200, data: foodRecordImageList, message: '가져올이미지가 존재하지않습니다' })
+    } else {
+      return NextResponse.json({ status: 200, data: foodRecordImageList, message: '이미지 불러오기 성공!' })
     }
-    return NextResponse.json({ status: 200, data: foodRecordImageList, message: '이미지 불러오기 성공!' })
   } catch (error: any) {
     return NextResponse.json({ status: 400, message: error.message })
   }
