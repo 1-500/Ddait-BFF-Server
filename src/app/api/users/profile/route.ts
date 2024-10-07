@@ -16,10 +16,8 @@ export async function PATCH(req: NextRequest) {
       Object.entries({ nickname, introduce, profile_image }).filter(([_, value]) => value !== undefined),
     )
 
-    // 프로필 이미지 삭제 처리
     if (profile_image === null) {
       updateData.profile_image = null
-      // 여기에 실제 이미지 파일 삭제 로직을 추가할 수 있습니다 (필요한 경우)
     }
 
     // 업데이트할 데이터가 없으면 early return
