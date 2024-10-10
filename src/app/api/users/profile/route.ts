@@ -16,6 +16,10 @@ export async function PATCH(req: NextRequest) {
       Object.entries({ nickname, introduce, profile_image }).filter(([_, value]) => value !== undefined),
     )
 
+    if (profile_image === null) {
+      updateData.profile_image = null
+    }
+
     // 업데이트할 데이터가 없으면 early return
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ message: '업데이트할 정보가 없습니다.' }, { status: 200 })
