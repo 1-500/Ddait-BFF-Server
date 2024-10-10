@@ -61,6 +61,7 @@ export async function GET(req: NextRequest) {
 
     if (foodRecordInfoResult === null) {
       return NextResponse.json({
+        id: food_record_id,
         message: '데이터가 존재하지 않습니다',
         status: 200,
       })
@@ -91,6 +92,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
+      id: food_record_id,
       data: userFoodList,
       message: '데이터를 정상적으로 조회하였습니다!',
       status: 200,
