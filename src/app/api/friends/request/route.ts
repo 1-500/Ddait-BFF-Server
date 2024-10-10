@@ -139,6 +139,7 @@ export async function POST(req: NextRequest) {
     }
 
     const responseData = {
+      id: friendRequest.id,
       status: friendRequest.status,
       friend_member_nickname: memberData.nickname,
     }

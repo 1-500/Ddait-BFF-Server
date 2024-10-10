@@ -21,7 +21,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       .select(
         `
         *,
-        current_members:competition_record(count)
+        current_members: competition_record(count),
+        host_info: host_id(id, nickname, email)
       `,
       )
       .eq('id', id)
@@ -74,6 +75,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         is_host: roomDetail.host_id === userId,
         is_participant: memberIds.includes(userId),
       },
+      host_info: roomDetail.host_info,
     }
 
     return NextResponse.json(

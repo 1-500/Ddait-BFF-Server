@@ -15,12 +15,20 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: 'Invalid Request Params' }, { status: 400 })
     }
 
+    const friends = await supabase
+      .from('friends')
+      .select('id, member_id, friend_member_id, friend_member:friend_member_id(nickname), status')
+      .or(`member_id.eq.${userId},friend_member_id.eq.${userId}`)
+    if (friends.error) {
+      return NextResponse.json({ message: friends.error.message }, { status: friends.status })
+    }
+
     const competitionRecord = await supabase
       .from('competition_record')
       .select(
         `
         id, total_score, member_id, rank,
-        member: member(nickname, profile_image),
+        member: member(id, email, nickname, profile_image),
         competition_score!inner(
           score,
           workout_info(name)
@@ -42,10 +50,27 @@ export async function GET(req: NextRequest) {
         }))
         .sort((a: any, b: any) => a.name.localeCompare(b.name))
 
+      const isMyRecord = recordElement.member_id === userId
+      const friend = isMyRecord
+        ? []
+        : friends.data.filter(
+            (friend) =>
+              friend.member_id === recordElement.member_id || friend.friend_member_id === recordElement.member_id,
+          )
+
       return {
         rank: recordElement.rank,
         total_score: recordElement.total_score,
-        is_my_record: recordElement.member_id === userId,
+        is_friend: friend.length > 0 && friend[0]?.status === '승인',
+        friend_info:
+          friend.length > 0
+            ? {
+                id: friend[0].id,
+                status: friend[0].status,
+                friend_member_nickname: friend[0].friend_member.nickname,
+              }
+            : { status: 'none' },
+        is_my_record: isMyRecord,
         member_info: recordElement.member,
         score_detail: scoreDetailData,
       }
