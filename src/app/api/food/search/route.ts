@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     const { data: foodInfoList, error: foodInfoListError } = await supabase
       .from('food_info')
       .select('*')
-      .ilike('name', `${term}%`)
+      .ilike('name', `%${term}%`)
 
     if (foodInfoListError) {
       return NextResponse.json({
