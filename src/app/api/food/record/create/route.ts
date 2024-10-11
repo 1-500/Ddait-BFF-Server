@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
       if (foodRecordInsertResultError) {
         return NextResponse.json({
           error: foodRecordInsertResultError.message,
-          status: foodRecordInsertResultError.code,
+          status: 500,
         })
       }
       const food_record_id = foodRecordInsertResult.id
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
       if (foodRecordUpdateError) {
         return NextResponse.json({
           error: foodRecordUpdateError.message,
-          status: foodRecordUpdateError.code,
+          status: 500,
         })
       }
 
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
       if (foodRecordInfoError) {
         return NextResponse.json({
           error: foodRecordInfoError.message,
-          status: foodRecordInfoError.code,
+          status: 500,
         })
       }
 
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
           if (error) {
             return NextResponse.json({
               message: error.message,
-              status: error.code,
+              status: 500,
             })
           }
         }
@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
           if (error) {
             return NextResponse.json({
               message: error.message,
-              status: error.code,
+              status: 500,
             })
           }
         }
@@ -149,5 +149,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error })
   }
 }
-
-//sdf
