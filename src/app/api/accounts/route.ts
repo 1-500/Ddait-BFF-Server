@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
 
-    const { email, password, nickname, birthdate, gender, location, preferred_sport } = await req.json()
+    const { email, password, nickname} = await req.json()
 
     if (!email || !password || !nickname) {
       return NextResponse.json(
