@@ -15,25 +15,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Invalid JSON body' }, { status: 400 })
     }
 
-    const insertResult = await supabase
-      .from('member_report')
-      .insert([
-        {
-          member_id: userId,
-          reported_member_id,
-          competition_room_id,
-          type,
-          description,
-        },
-      ])
-      .select('*')
-      .single()
+    const insertResult = await supabase.from('member_report').insert([
+      {
+        member_id: userId,
+        reported_member_id,
+        competition_room_id,
+        type,
+        description,
+      },
+    ])
     if (insertResult.error) {
       console.error('Supabase Insert into member_report Error:', insertResult.error)
       return NextResponse.json({ message: insertResult.error.message }, { status: insertResult.status })
     }
 
-    return NextResponse.json({ data: insertResult.data }, { status: 201 })
+    return NextResponse.json({ message: '신고가 제출되었습니다.' }, { status: 201 })
   } catch (error) {
     return NextResponse.json({ error: error })
   }
