@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     if (result.error || result.data.length === 0) {
       return NextResponse.json({
         message: '데이터가 존재하지 않습니다',
-        status: result.status.toFixed(),
+        status: Number(result.status.toFixed()),
       })
     }
     const memberCustomFood = result.data
