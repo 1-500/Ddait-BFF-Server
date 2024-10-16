@@ -9,6 +9,12 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const id = searchParams.get('id')
 
+    console.log(id)
+    if (!id) {
+      console.log(id)
+      return NextResponse.json({ status: 200, message: '조회할 이미지가 없습니다.' })
+    }
+
     const { data: food_record_images, error } = await supabase
       .from('food_record_images')
       .select()
@@ -17,6 +23,7 @@ export async function GET(req: NextRequest) {
     if (error) {
       return NextResponse.json({ status: error.code, message: error.message })
     }
+
     const foodRecordImageList = []
     for (const image of food_record_images) {
       const { data } = supabase.storage.from('food_record_images').getPublicUrl(image.file_url)

@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
 
     if (date === null) {
       return NextResponse.json({
-        error: '날짜를 입력해주세요',
+        message: '날짜를 입력해주세요',
         status: 400,
       })
     }
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
 
     if (foodDirayResult === null) {
       return NextResponse.json({
-        message: '데이터가 존재하지 않습니다',
+        message: '기록한 데이터가 존재하지 않습니다',
         status: 200,
       })
     }
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
         .single()
       if (foodRecordInsertResultError) {
         return NextResponse.json({
-          error: foodRecordInsertResultError.message,
+          message: foodRecordInsertResultError.message,
           status: 500,
         })
       }
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
           .select('id')
         if (result.error) {
           return NextResponse.json({
-            error: result.error.message,
+            message: result.error.message,
             status: result.error.code,
           })
         }
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
 
       if (foodRecordUpdateError) {
         return NextResponse.json({
-          error: foodRecordUpdateError.message,
+          message: foodRecordUpdateError.message,
           status: 500,
         })
       }
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
 
       if (foodRecordInfoError) {
         return NextResponse.json({
-          error: foodRecordInfoError.message,
+          message: foodRecordInfoError.message,
           status: 500,
         })
       }
@@ -145,7 +145,11 @@ export async function POST(req: NextRequest) {
         status: 200,
       })
     }
-  } catch (error) {
-    return NextResponse.json({ error: error })
+    return NextResponse.json({
+      message: '기록한 데이터가 존재하지 않습니다',
+      status: 200,
+    })
+  } catch (error: any) {
+    return NextResponse.json({ message: error.message, status: 500 })
   }
 }
