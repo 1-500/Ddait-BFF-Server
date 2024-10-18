@@ -9,31 +9,71 @@ export async function POST(req: NextRequest) {
 
     const { email, password } = await req.json()
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
 
-    if (error) {
-      return NextResponse.json({ message: error.message }, { status: error.status })
-    }
-    const result = await supabase.from('member').select('*').eq('email', email).single()
-    const userId = result.data.id
-    const nickname = result.data.nickname
-    const profileImageUrl = result.data.profile_image
-    const introduce = result.data.introduce
+    if (authError) {
+      const errorMessage = authError.message.toLowerCase()
+      if (errorMessage.includes('invalid login credentials')) {
+        return NextResponse.json(
+          {
+            status: 401,
+            code: 'INVALID_CREDENTIALS',
+            message: '아이디 또는 비밀번호가 잘못되었습니다.',
+          },
+          { status: 401 },
+        )
+      }
 
-    return NextResponse.json({
-      session: data.session,
-      userId: userId,
-      nickname: nickname,
-      profileImageUrl: profileImageUrl,
-      introduce: introduce,
-      status: 200,
-    })
-  } catch (error) {
-    return NextResponse.json({ message: error })
+      return NextResponse.json(
+        {
+          status: authError.status || 500,
+          code: 'AUTH_ERROR',
+          message: authError.message || '로그인 중 오류가 발생했습니다.',
+        },
+        { status: authError.status || 500 },
+      )
+    }
+
+    const { data: userData, error: userError } = await supabase
+      .from('member')
+      .select('id, nickname, profile_image, introduce, user_level')
+      .eq('email', email)
+      .single()
+
+    if (userError) {
+      return NextResponse.json(
+        {
+          status: 500,
+          code: 'USER_FETCH_ERROR',
+          message: userError.message || '회원 정보를 가져오는 중 오류가 발생했습니다.',
+        },
+        { status: 500 },
+      )
+    }
+
+    return NextResponse.json(
+      {
+        status: 200,
+        code: 'SUCCESS',
+        message: '로그인 성공',
+        data: {
+          user: userData,
+          session: authData.session,
+        },
+      },
+      { status: 200 },
+    )
+  } catch (error: any) {
+    return NextResponse.json(
+      {
+        status: 500,
+        code: 'INTERNAL_SERVER_ERROR',
+        message: error.message || '서버 내부 오류가 발생했습니다.',
+      },
+      { status: 500 },
+    )
   }
 }
-
-//sdf
