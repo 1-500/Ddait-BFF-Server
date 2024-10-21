@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
     if (error) {
       return NextResponse.json({ status: error.code, message: error.message })
     }
+
     const foodRecordImageList = []
     for (const image of food_record_images) {
       const { data } = supabase.storage.from('food_record_images').getPublicUrl(image.file_url)
