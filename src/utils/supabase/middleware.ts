@@ -33,11 +33,13 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (request.nextUrl.pathname === '/api/login' || request.nextUrl.pathname === '/api/accounts') {
+  if (
+    request.nextUrl.pathname === '/api/login' ||
+    request.nextUrl.pathname === '/api/accounts' ||
+    request.nextUrl.pathname === '/api/social/login/apple'
+  ) {
     return supabaseResponse
-  }
-  // 요청하는 부분이 login API일경우
-  else {
+  } else {
     if (!user) {
       return NextResponse.json({ status: 403, message: '존재하지않는 유저입니다.' })
     } else {
